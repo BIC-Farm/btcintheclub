@@ -1,2 +1,4 @@
 # btcintheclub
-Community di Bitcoin in the #Club. Aggiornamenti, risorse e tanto altro direttamente dalla community su Bitcoin più open d'Italia
+
+La community di Bitcoin in the Club è una delle più importanti community Bitcoin only in Italia. Mettiamo insieme studiosi, curiosi, newbie e scettici 
+in un unico grande contenitore open source e pronto a formare e condividere conoscenze e competenze in tutta trasparenza.
