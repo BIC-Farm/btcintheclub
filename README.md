@@ -22,7 +22,14 @@ Funzionalità principali:
   semplici di chi ha inviato cosa a chi, elenco input/output.
 - **Dettaglio indirizzo**: saldo attuale, totale ricevuto, cronologia transazioni con importi in
   entrata/uscita evidenziati.
-- **Glossario** (`#/glossario`) con le parole chiave di Bitcoin spiegate in italiano semplice.
+- **Glossario** (`#/glossario`) con oltre 20 termini di Bitcoin spiegati in italiano semplice. Ogni
+  parola tecnica che compare nell'app (hash, fee, conferme, input/output, nonce, difficoltà, ecc.) è
+  un link sottolineato che porta dritto alla voce corrispondente del glossario, evidenziata al volo.
+- **Pulsanti "copia"** su hash, txid e indirizzi, per non dover selezionare a mano testi lunghi.
+- **Grafica "liquid glass"**: pannelli traslucidi con effetto vetro smerigliato, sfondo a gradiente
+  soffuso, forme arrotondate e tema chiaro/scuro automatico in base alle preferenze di sistema.
+- **Guide** (`#/guide`) con approfondimenti pratici di sicurezza. La prima guida spiega come proteggere
+  la seed phrase: regole d'oro, cosa non fare mai e le truffe più comuni da riconoscere.
 
 ### Come funziona
 
