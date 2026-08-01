@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Block Explorer per Newbies · Bitcoin in the Club</title>
+  <meta name="description" content="Un block explorer Bitcoin semplice e intuitivo, pensato per chi è alle prime armi." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>₿</text></svg>" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#/">
+        <span class="brand-icon">₿</span>
+        <span class="brand-text">
+          <strong>Bitcoin in the Club</strong>
+          <small>Block Explorer per Newbies</small>
+        </span>
+      </a>
+
+      <form id="search-form" class="search-form" autocomplete="off">
+        <input
+          id="search-input"
+          type="text"
+          inputmode="search"
+          placeholder="Cerca blocco (altezza o hash), transazione o indirizzo…"
+          aria-label="Cerca blocco, transazione o indirizzo"
+        />
+        <button type="submit">Cerca</button>
+      </form>
+
+      <nav class="main-nav">
+        <a href="#/">Home</a>
+        <a href="#/glossario">Glossario</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="app" class="app"></main>
+
+  <footer class="site-footer">
+    <p>
+      Dati forniti in tempo reale da <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>.
+      Progetto open source della community <a href="https://github.com/bic-farm/btcintheclub" target="_blank" rel="noopener">Bitcoin in the Club</a>.
+    </p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
