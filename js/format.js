@@ -1,4 +1,32 @@
 const SATS_PER_BTC = 100_000_000;
+const UNIT_KEY = "bic-unit";
+
+function readStoredUnit() {
+  try {
+    return localStorage.getItem(UNIT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredUnit(u) {
+  try {
+    localStorage.setItem(UNIT_KEY, u);
+  } catch {
+    // localStorage non disponibile (es. modalità privata): la preferenza resta solo per la sessione corrente.
+  }
+}
+
+let unit = readStoredUnit() === "sats" ? "sats" : "btc";
+
+export function getUnit() {
+  return unit;
+}
+
+export function setUnit(u) {
+  unit = u === "sats" ? "sats" : "btc";
+  writeStoredUnit(unit);
+}
 
 export function escapeHtml(str) {
   return String(str)
@@ -13,13 +41,24 @@ export function satsToBtc(sats) {
   return (sats / SATS_PER_BTC).toFixed(8);
 }
 
-export function formatBtc(sats, { sign = false } = {}) {
+function formatBtcAmount(sats, { sign = false } = {}) {
   const prefix = sign && sats > 0 ? "+" : "";
   return `${prefix}${satsToBtc(sats)} BTC`;
 }
 
-export function formatSats(sats) {
-  return `${Number(sats).toLocaleString("it-IT")} sat`;
+export function formatSats(sats, { sign = false } = {}) {
+  const prefix = sign && sats > 0 ? "+" : "";
+  return `${prefix}${Number(sats).toLocaleString("it-IT")} sat`;
+}
+
+/** Formatta nell'unità attualmente selezionata dall'utente (BTC o sats). */
+export function formatBtc(sats, opts = {}) {
+  return unit === "sats" ? formatSats(sats, opts) : formatBtcAmount(sats, opts);
+}
+
+/** Formatta nell'unità "opposta" a quella corrente, utile per mostrare un valore secondario. */
+export function formatAlt(sats, opts = {}) {
+  return unit === "sats" ? formatBtcAmount(sats, opts) : formatSats(sats, opts);
 }
 
 export function formatNumber(n) {
