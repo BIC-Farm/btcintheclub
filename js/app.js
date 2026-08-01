@@ -4,6 +4,7 @@ import * as fmt from "./format.js";
 const app = document.getElementById("app");
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-input");
+const unitToggle = document.getElementById("unit-toggle");
 
 function setContent(html) {
   app.innerHTML = html;
@@ -420,7 +421,7 @@ async function renderTx(txid) {
           <div class="item"><div class="k">${termLink("vSize", "peso")}</div><div class="v">${fmt.formatNumber(vsize)} vB</div></div>
           <div class="item"><div class="k">${termLink("Versione", "versione")}</div><div class="v">${tx.version}</div></div>
           <div class="item"><div class="k">${termLink("Locktime", "locktime")}</div><div class="v">${tx.locktime}</div></div>
-          ${!isCoinbase ? `<div class="item"><div class="k">${termLink("Fee totale", "fee")}</div><div class="v">${fmt.formatBtc(tx.fee)} (${fmt.formatSats(tx.fee)})</div></div>` : ""}
+          ${!isCoinbase ? `<div class="item"><div class="k">${termLink("Fee totale", "fee")}</div><div class="v">${fmt.formatBtc(tx.fee)} (${fmt.formatAlt(tx.fee)})</div></div>` : ""}
         </div>
       </details>
     </div>
@@ -477,7 +478,7 @@ async function renderAddress(address) {
       <div class="stat-card">
         <div class="label">Saldo attuale <a class="help-icon" href="#/glossario/utxo" title="Il saldo è la somma degli UTXO non spesi ricevuti da questo indirizzo. Clicca per saperne di più.">?</a></div>
         <div class="value">${fmt.formatBtc(balance)}</div>
-        <div class="sub">${fmt.formatSats(balance)}</div>
+        <div class="sub">${fmt.formatAlt(balance)}</div>
       </div>
       <div class="stat-card">
         <div class="label">Ricevuto in totale</div>
@@ -716,5 +717,21 @@ searchForm.addEventListener("submit", (e) => {
   location.hash = `#/search/${encodeURIComponent(q)}`;
 });
 
+function syncUnitToggle() {
+  const current = fmt.getUnit();
+  unitToggle.querySelectorAll(".unit-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.unit === current);
+  });
+}
+
+unitToggle.addEventListener("click", (e) => {
+  const btn = e.target.closest(".unit-btn");
+  if (!btn || btn.dataset.unit === fmt.getUnit()) return;
+  fmt.setUnit(btn.dataset.unit);
+  syncUnitToggle();
+  router();
+});
+
+syncUnitToggle();
 window.addEventListener("hashchange", router);
 router();

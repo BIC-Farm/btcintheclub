@@ -30,6 +30,8 @@ Funzionalità principali:
   soffuso, forme arrotondate e tema chiaro/scuro automatico in base alle preferenze di sistema.
 - **Guide** (`#/guide`) con approfondimenti pratici di sicurezza. La prima guida spiega come proteggere
   la seed phrase: regole d'oro, cosa non fare mai e le truffe più comuni da riconoscere.
+- **Toggle BTC / sats** in header: cambia l'unità di visualizzazione di tutti gli importi con un click,
+  preferenza salvata in locale così resta impostata anche ai visite successive.
 
 ### Come funziona
 

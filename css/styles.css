@@ -216,6 +216,36 @@ a:hover {
   transform: scale(0.96);
 }
 
+.unit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--pill);
+  box-shadow: var(--shadow-sm);
+  padding: 0.2rem;
+  flex-shrink: 0;
+}
+.unit-btn {
+  border: none;
+  background: transparent;
+  padding: 0.35rem 0.8rem;
+  border-radius: var(--pill);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.unit-btn:hover {
+  color: var(--ink);
+}
+.unit-btn.active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--orange) 85%, white), var(--orange) 65%);
+  color: #241a08;
+}
+
 .main-nav {
   display: flex;
   gap: 1.1rem;
