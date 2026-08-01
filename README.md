@@ -28,6 +28,8 @@ Funzionalità principali:
 - **Pulsanti "copia"** su hash, txid e indirizzi, per non dover selezionare a mano testi lunghi.
 - **Grafica "liquid glass"**: pannelli traslucidi con effetto vetro smerigliato, sfondo a gradiente
   soffuso, forme arrotondate e tema chiaro/scuro automatico in base alle preferenze di sistema.
+- **Guide** (`#/guide`) con approfondimenti pratici di sicurezza. La prima guida spiega come proteggere
+  la seed phrase: regole d'oro, cosa non fare mai e le truffe più comuni da riconoscere.
 
 ### Come funziona
 

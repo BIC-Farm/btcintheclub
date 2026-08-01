@@ -85,6 +85,8 @@ async function router() {
         return await renderAddress(parts[1]);
       case "glossario":
         return renderGlossary(parts[1]);
+      case "guide":
+        return parts[1] ? renderGuide(parts[1]) : renderGuideIndex();
       case "search":
         return await renderSearch(parts[1]);
       default:
@@ -546,6 +548,9 @@ const GLOSSARY_TERMS = [
   { slug: "bits", icon: "🔢", term: "Bits", desc: "Una rappresentazione compatta della difficoltà attuale della rete, memorizzata nell'intestazione del blocco." },
   { slug: "versione", icon: "🔖", term: "Versione", desc: "Indica quali regole del protocollo Bitcoin la transazione o il blocco seguono." },
   { slug: "locktime", icon: "⏱️", term: "Locktime", desc: "Un valore opzionale che impedisce a una transazione di essere inclusa in un blocco prima di un certo momento o di una certa altezza blocco." },
+  { slug: "seed", icon: "🌱", term: "Seed phrase", desc: "Le 12 o 24 parole (frase di recupero) da cui vengono generate tutte le chiavi private del tuo wallet. Chi la conosce può spendere i tuoi bitcoin: va custodita con la massima cura e non condivisa mai con nessuno.", guide: "seed-sicura" },
+  { slug: "chiaveprivata", icon: "🔐", term: "Chiave privata", desc: "Un numero segreto che dimostra matematicamente la proprietà di un indirizzo e permette di firmare le transazioni per spenderne i fondi. Va protetta come la seed da cui viene derivata." },
+  { slug: "wallet", icon: "👛", term: "Wallet", desc: "Il \"portafoglio\": un programma o dispositivo che genera e custodisce le tue chiavi private e ti permette di firmare transazioni. Non contiene fisicamente i bitcoin, che restano sempre sulla blockchain." },
 ];
 
 function renderGlossary(slug) {
@@ -559,6 +564,7 @@ function renderGlossary(slug) {
         <div class="glossary-card" id="term-${t.slug}">
           <div class="term"><span class="icon">${t.icon}</span> ${fmt.escapeHtml(t.term)}</div>
           <p>${fmt.escapeHtml(t.desc)}</p>
+          ${t.guide ? `<p><a class="term-link" href="#/guide/${t.guide}">📖 Leggi la guida completa</a></p>` : ""}
         </div>`
       ).join("")}
     </div>
@@ -571,6 +577,134 @@ function renderGlossary(slug) {
       target.classList.add("highlight");
     }
   }
+}
+
+// ---------- Guide ----------
+
+const GUIDES = [
+  {
+    slug: "seed-sicura",
+    icon: "🔐",
+    title: "Come proteggere la tua seed phrase",
+    summary: "La guida essenziale per custodire in sicurezza le parole segrete che proteggono i tuoi bitcoin.",
+    body: () => `
+      <div class="card">
+        <p>
+          La ${termLink("seed phrase", "seed")} (o frase di recupero) è una sequenza di 12 o 24 parole:
+          è l'unica copia di backup del tuo ${termLink("wallet", "wallet")}, da cui vengono generate tutte
+          le tue ${termLink("chiavi private", "chiaveprivata")}. Chi la conosce può spendere i tuoi bitcoin
+          da qualsiasi parte del mondo, senza bisogno del tuo dispositivo. Per questo va trattata come il
+          bene più prezioso che possiedi: proteggerla bene è probabilmente la competenza più importante da
+          imparare quando si usa Bitcoin.
+        </p>
+      </div>
+
+      <h2 class="section-title">✅ Le regole d'oro</h2>
+      <div class="glossary-grid">
+        <div class="tip-card good">
+          <div class="tip-title">📝 Solo carta o metallo</div>
+          <p>Trascrivi le parole a mano su carta, oppure incidile su una piastrina di metallo resistente al fuoco e all'acqua. Mai in forma digitale.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">🙈 Nessuna copia digitale</div>
+          <p>Non fotografarla, non scansionarla, non salvarla in note, email, cloud (Google Drive, iCloud) o password manager collegati a internet.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">🗄️ Conservala al sicuro</div>
+          <p>Una cassaforte, una cassetta di sicurezza o un nascondiglio che solo tu conosci. Valuta più copie in luoghi diversi contro incendi o furti.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">✔️ Verifica subito il backup</div>
+          <p>Molti wallet permettono di verificare la seed appena creata: fallo subito. Scoprire un errore di trascrizione dopo aver perso l'accesso è troppo tardi.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">🤐 Zero condivisione, sempre</div>
+          <p>Nessun exchange, wallet o servizio di supporto legittimo ti chiederà mai la seed. Chi te la chiede sta cercando di derubarti, punto.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">👀 Occhio a chi ti guarda</div>
+          <p>Scrivila e conservala senza che nessuno ti veda, anche in videochiamata o davanti a una telecamera.</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">🚫 Cosa non fare mai</h2>
+      <div class="glossary-grid">
+        <div class="tip-card bad">
+          <div class="tip-title">📷 Non fotografarla</div>
+          <p>Le foto finiscono spesso in backup cloud automatici che possono essere violati.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">⌨️ Non digitarla da nessuna parte</div>
+          <p>Nessun sito o app legittima la richiede: se te la chiede, è quasi certamente un sito di phishing.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">🌐 Non usare generatori online</div>
+          <p>Solo il tuo wallet, offline, deve generare la seed. Un generatore web può registrarla a tua insaputa.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">☎️ Non condividerla per "verifiche"</div>
+          <p>È la truffa più comune: falso supporto tecnico su Telegram, Discord o email che chiede la seed per "risolvere un problema".</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">📍 Non tenerla vicino al dispositivo</div>
+          <p>Conservarla accanto all'hardware wallet o al PC vanifica la protezione in caso di furto in casa.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">🧠 Non fidarti solo della memoria</div>
+          <p>La mente dimentica: senza un backup fisico verificato, un solo errore può costarti tutto.</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">⚠️ Truffe comuni da riconoscere</h2>
+      <div class="warning-box">
+        <ul style="margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:0.6rem;">
+          <li><strong>Falso supporto tecnico:</strong> ti contatta su social, Telegram o email fingendosi assistenza di un wallet o exchange e chiede la seed per "sbloccare" o "verificare" il tuo account.</li>
+          <li><strong>Siti e app clone:</strong> copie quasi identiche di wallet famosi che rubano la seed appena viene inserita.</li>
+          <li><strong>Estensioni del browser malevole:</strong> sostituiscono silenziosamente gli indirizzi copiati o chiedono accesso al wallet.</li>
+          <li><strong>QR code sostituiti:</strong> in eventi o locali pubblici, adesivi con QR code falsi applicati sopra quelli reali, che portano a siti di phishing.</li>
+          <li><strong>Regali o vincite improvvise:</strong> messaggi che promettono bitcoin gratuiti in cambio della tua seed "per sbloccarli".</li>
+        </ul>
+      </div>
+
+      <h2 class="section-title">🆘 Pensi che la tua seed sia stata compromessa?</h2>
+      <div class="danger-box">
+        <p style="margin:0;">
+          Non aspettare: crea un nuovo ${termLink("wallet", "wallet")} con una seed generata offline da un
+          dispositivo pulito, e trasferisci subito tutti i fondi al nuovo indirizzo. Una seed compromessa
+          resta a rischio per sempre, anche se il furto non è ancora avvenuto.
+        </p>
+      </div>
+    `,
+  },
+];
+
+function renderGuideIndex() {
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / Guide</div>
+    <h1>Guide Bitcoin per principianti</h1>
+    <p class="muted">Approfondimenti pratici per usare Bitcoin in sicurezza, un passo alla volta.</p>
+    <ul class="block-list">
+      ${GUIDES.map(
+        (g) => `
+        <li>
+          <a class="row-link" href="#/guide/${g.slug}">
+            <div class="row-top"><span>${g.icon} ${fmt.escapeHtml(g.title)}</span></div>
+            <div class="row-bottom"><span>${fmt.escapeHtml(g.summary)}</span></div>
+          </a>
+        </li>`
+      ).join("")}
+    </ul>
+  `);
+}
+
+function renderGuide(slug) {
+  const guide = GUIDES.find((g) => g.slug === slug);
+  if (!guide) return renderNotFound();
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
+    <h1>${guide.icon} ${fmt.escapeHtml(guide.title)}</h1>
+    ${guide.body()}
+  `);
 }
 
 // ---------- Wiring ----------

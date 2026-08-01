@@ -631,6 +631,62 @@ details.tech-details summary:hover {
   padding: 1rem 1.25rem;
 }
 
+.warning-box,
+.danger-box {
+  background: linear-gradient(160deg, var(--yellow-bg), var(--card-bg) 70%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.3rem;
+  color: var(--ink);
+}
+.warning-box strong {
+  color: var(--yellow);
+}
+.danger-box {
+  background: linear-gradient(160deg, var(--red-bg), var(--card-bg) 70%);
+}
+.danger-box strong {
+  color: var(--red);
+}
+
+.tip-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1.1rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.tip-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.tip-card .tip-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+.tip-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.87rem;
+}
+.tip-card.good {
+  border-color: color-mix(in srgb, var(--green) 35%, var(--border));
+}
+.tip-card.good .tip-title {
+  color: var(--green);
+}
+.tip-card.bad {
+  border-color: color-mix(in srgb, var(--red) 35%, var(--border));
+}
+.tip-card.bad .tip-title {
+  color: var(--red);
+}
+
 .term-link {
   color: inherit;
   text-decoration: underline;
