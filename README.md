@@ -28,8 +28,9 @@ Funzionalità principali:
 - **Pulsanti "copia"** su hash, txid e indirizzi, per non dover selezionare a mano testi lunghi.
 - **Grafica "liquid glass"**: pannelli traslucidi con effetto vetro smerigliato, sfondo a gradiente
   soffuso, forme arrotondate e tema chiaro/scuro automatico in base alle preferenze di sistema.
-- **Guide** (`#/guide`) con approfondimenti pratici di sicurezza. La prima guida spiega come proteggere
-  la seed phrase: regole d'oro, cosa non fare mai e le truffe più comuni da riconoscere.
+- **Guide** (`#/guide`) con approfondimenti pratici per chi inizia: come proteggere la seed phrase,
+  custodial vs non-custodial, come scegliere il primo wallet, le truffe Bitcoin più comuni, come funzionano
+  fee e conferme, e le basi della privacy su Bitcoin.
 - **Toggle BTC / sats** in header: cambia l'unità di visualizzazione di tutti gli importi con un click,
   preferenza salvata in locale così resta impostata anche ai visite successive.
 - **Genera una seed con i dadi** (`#/guide/dadi-seed`, dentro la sezione Guide): demo didattica che mostra

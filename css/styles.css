@@ -693,9 +693,6 @@ details.tech-details summary:hover {
   transform: translateY(-2px);
 }
 .tip-card .tip-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   font-weight: 700;
   margin-bottom: 0.35rem;
 }
