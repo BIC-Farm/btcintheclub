@@ -1,5 +1,6 @@
 import { api, ApiError } from "./api.js";
 import * as fmt from "./format.js";
+import { diceRollsToMnemonic, ROLLS_REQUIRED, looksNonRandom } from "./bip39.js";
 
 const app = document.getElementById("app");
 const searchForm = document.getElementById("search-form");
@@ -73,7 +74,18 @@ function parseHash() {
   return hash.split("/").filter(Boolean).map(decodeURIComponent);
 }
 
+let viewCleanup = null;
+
+/** Le viste che registrano listener globali (es. online/offline) passano qui una funzione di rimozione. */
+function setViewCleanup(fn) {
+  viewCleanup = fn;
+}
+
 async function router() {
+  if (viewCleanup) {
+    viewCleanup();
+    viewCleanup = null;
+  }
   const parts = parseHash();
   try {
     if (parts.length === 0) return await renderHome();
@@ -677,6 +689,13 @@ const GUIDES = [
       </div>
     `,
   },
+  {
+    slug: "dadi-seed",
+    icon: "🎲",
+    title: "Genera una seed con i dadi (demo didattica)",
+    summary: "Prova con mano come dei tiri di dado fisico si trasformano in una mnemonic BIP39. Si sblocca solo offline.",
+    interactive: true,
+  },
 ];
 
 function renderGuideIndex() {
@@ -701,11 +720,178 @@ function renderGuideIndex() {
 function renderGuide(slug) {
   const guide = GUIDES.find((g) => g.slug === slug);
   if (!guide) return renderNotFound();
+  if (guide.interactive) return renderDiceGenerator(guide);
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
     <h1>${guide.icon} ${fmt.escapeHtml(guide.title)}</h1>
     ${guide.body()}
   `);
+}
+
+const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+function renderDiceGenerator(guide) {
+  let targetBits = 128;
+  let rolls = [];
+  let mnemonic = null;
+  let generating = false;
+
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
+    <h1>${guide.icon} ${fmt.escapeHtml(guide.title)}</h1>
+    <div class="intro-box">
+      <span class="intro-icon">🎓</span>
+      <div>
+        <p style="margin:0;">
+          Questo strumento serve a <strong>capire come funziona</strong> la generazione di una seed a partire
+          da tiri di dado fisico, non a creare il portafoglio che userai davvero. Le parole non vengono mai
+          salvate, inviate in rete o copiate: restano solo nella memoria di questa pagina finché non la
+          ricarichi. Dettagli nella guida "${GUIDES.find((g) => g.slug === "seed-sicura")?.title || "Seed sicura"}".
+        </p>
+      </div>
+    </div>
+    <div id="dice-app"></div>
+  `);
+
+  const diceApp = document.getElementById("dice-app");
+
+  function required() {
+    return ROLLS_REQUIRED[targetBits];
+  }
+
+  function renderApp() {
+    const online = navigator.onLine;
+    let html;
+
+    if (online) {
+      html = `
+        <div class="danger-box">
+          <p style="margin:0 0 0.75rem;">
+            <strong>🔌 Sei ancora online.</strong> Disconnetti la rete (Wi-Fi, dati mobili o modalità aereo)
+            per continuare: è la stessa disciplina che consigliamo nella guida alla seed sicura, applicata
+            qui in pratica.
+          </p>
+          <button type="button" class="btn btn-primary" data-action="recheck">Ho disconnesso, ricontrolla</button>
+        </div>`;
+    } else if (mnemonic) {
+      html = `
+        <div class="card">
+          <p class="muted small">Le tue ${mnemonic.length} parole, nell'ordine generato:</p>
+          <div class="glossary-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));">
+            ${mnemonic
+              .map((w, i) => `<div class="tip-card"><div class="tip-title mono small">${i + 1}. ${fmt.escapeHtml(w)}</div></div>`)
+              .join("")}
+          </div>
+        </div>
+        <div class="danger-box" style="margin-top:1rem;">
+          <p>
+            <strong>Promemoria:</strong> questa resta una demo didattica. Se vuoi usarla per un wallet con
+            fondi reali, verifica di essere su un dispositivo pulito e realmente offline, poi
+            <strong>trascrivi subito le parole a mano</strong> su carta o metallo — di proposito non c'è un
+            pulsante "copia": copiarle digitalmente vanificherebbe l'esercizio. Per un uso reale il metodo
+            più sicuro resta generare la seed direttamente su un ${termLink("wallet", "wallet")} hardware dedicato.
+          </p>
+          <p style="margin:0.5rem 0 0;"><a class="term-link" href="#/glossario/seed">Rileggi cos'è una seed phrase →</a></p>
+        </div>
+        <div class="nav-buttons">
+          <button type="button" class="btn" data-action="reset">🔄 Ricomincia</button>
+          <a class="btn" href="#/guide">← Torna alle guide</a>
+        </div>`;
+    } else {
+      const n = rolls.length;
+      const need = required();
+      const pct = Math.min(100, Math.round((n / need) * 100));
+      const warn = looksNonRandom(rolls);
+      const ready = n >= need;
+      html = `
+        <div class="card">
+          <div class="unit-toggle" role="group" aria-label="Numero di parole" style="margin-bottom:1rem;">
+            <button type="button" class="unit-btn ${targetBits === 128 ? "active" : ""}" data-action="words" data-bits="128" ${generating ? "disabled" : ""}>12 parole</button>
+            <button type="button" class="unit-btn ${targetBits === 256 ? "active" : ""}" data-action="words" data-bits="256" ${generating ? "disabled" : ""}>24 parole</button>
+          </div>
+          <p>
+            Tira un <strong>dado fisico a 6 facce</strong> — vero, in mano — e registra qui ogni risultato.
+            Servono <strong>${need} tiri</strong> per un'entropia sufficiente. Non c'è un bottone che "tira per te":
+            l'entropia deve venire dal dado reale, non dal computer.
+          </p>
+          <div class="dice-faces" role="group" aria-label="Inserisci il risultato del tiro">
+            ${[1, 2, 3, 4, 5, 6]
+              .map(
+                (f) =>
+                  `<button type="button" class="dice-face" data-action="roll" data-face="${f}" ${ready || generating ? "disabled" : ""} aria-label="Tiro: ${f}">${DICE_FACES[f - 1]}</button>`
+              )
+              .join("")}
+          </div>
+          <div class="dice-progress" aria-live="polite">
+            <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${pct}%"></div></div>
+            <span class="small muted">${n} / ${need} tiri</span>
+          </div>
+          ${warn ? `<p class="small" style="color:var(--yellow);">⚠️ Questi tiri sembrano poco casuali (una faccia ricorre troppo spesso). Se hai davvero usato un dado fisico va bene, altrimenti ricomincia con tiri reali.</p>` : ""}
+          <div class="dice-history mono small muted">${rolls.map((r) => DICE_FACES[r - 1]).join(" ") || "Nessun tiro ancora registrato."}</div>
+          <div class="nav-buttons">
+            <button type="button" class="btn" data-action="undo" ${n === 0 || generating ? "disabled" : ""}>↩ Annulla ultimo</button>
+            <button type="button" class="btn" data-action="reset" ${n === 0 || generating ? "disabled" : ""}>🔄 Ricomincia</button>
+          </div>
+          <button type="button" class="btn btn-primary" data-action="generate" style="margin-top:0.75rem; width:100%;" ${!ready || generating ? "disabled" : ""}>
+            ${generating ? "Genero…" : ready ? "🎲 Genera la mnemonic" : `Servono altri ${need - n} tiri`}
+          </button>
+        </div>`;
+    }
+
+    diceApp.innerHTML = html;
+  }
+
+  async function handleClick(e) {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === "recheck") {
+      renderApp();
+    } else if (action === "roll") {
+      if (rolls.length < required()) rolls.push(Number(btn.dataset.face));
+      renderApp();
+    } else if (action === "undo") {
+      rolls.pop();
+      renderApp();
+    } else if (action === "reset") {
+      rolls = [];
+      mnemonic = null;
+      renderApp();
+    } else if (action === "words") {
+      targetBits = Number(btn.dataset.bits);
+      rolls = [];
+      mnemonic = null;
+      renderApp();
+    } else if (action === "generate") {
+      if (rolls.length < required() || navigator.onLine) return;
+      generating = true;
+      renderApp();
+      try {
+        mnemonic = await diceRollsToMnemonic(rolls.slice(0, required()), targetBits);
+      } catch {
+        mnemonic = null;
+      }
+      generating = false;
+      renderApp();
+    }
+  }
+
+  function handleConnectivityChange() {
+    renderApp();
+  }
+
+  diceApp.addEventListener("click", handleClick);
+  window.addEventListener("online", handleConnectivityChange);
+  window.addEventListener("offline", handleConnectivityChange);
+  setViewCleanup(() => {
+    window.removeEventListener("online", handleConnectivityChange);
+    window.removeEventListener("offline", handleConnectivityChange);
+    rolls = [];
+    mnemonic = null;
+  });
+
+  renderApp();
 }
 
 // ---------- Wiring ----------

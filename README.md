@@ -32,6 +32,12 @@ Funzionalità principali:
   la seed phrase: regole d'oro, cosa non fare mai e le truffe più comuni da riconoscere.
 - **Toggle BTC / sats** in header: cambia l'unità di visualizzazione di tutti gli importi con un click,
   preferenza salvata in locale così resta impostata anche ai visite successive.
+- **Genera una seed con i dadi** (`#/guide/dadi-seed`, dentro la sezione Guide): demo didattica che mostra
+  come dei tiri di dado fisico diventano una mnemonic BIP39 (entropia via SHA-256 nativo del browser,
+  wordlist inglese ufficiale). Si sblocca solo a connessione disattivata (`navigator.onLine`) e si
+  riblocca subito se torna online; le parole non vengono mai salvate, inviate in rete o copiabili, e sono
+  pensate esplicitamente **per capire il meccanismo**, non per generare un wallet con fondi reali — per
+  quello resta valido il consiglio della guida "Seed sicura": usare un hardware wallet dedicato.
 
 ### Come funziona
 

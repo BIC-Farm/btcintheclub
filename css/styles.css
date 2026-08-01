@@ -717,6 +717,69 @@ details.tech-details summary:hover {
   color: var(--red);
 }
 
+.dice-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+.dice-face {
+  width: 3.2rem;
+  height: 3.2rem;
+  font-size: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dice-face:hover:not(:disabled) {
+  border-color: var(--orange);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.dice-face:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.dice-face:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dice-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+.dice-progress-bar {
+  flex: 1;
+  height: 0.5rem;
+  background: var(--hairline);
+  border-radius: var(--pill);
+  overflow: hidden;
+}
+.dice-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), color-mix(in srgb, var(--orange) 60%, #ffd08a));
+  border-radius: var(--pill);
+  transition: width 0.2s ease;
+}
+
+.dice-history {
+  word-break: break-all;
+  line-height: 1.9;
+  padding: 0.6rem 0.75rem;
+  background: var(--io-bg);
+  border-radius: var(--radius-sm);
+  min-height: 2.5rem;
+}
+
 .term-link {
   color: inherit;
   text-decoration: underline;
