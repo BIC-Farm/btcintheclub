@@ -20,13 +20,16 @@
       </a>
 
       <form id="search-form" class="search-form" autocomplete="off">
-        <input
-          id="search-input"
-          type="text"
-          inputmode="search"
-          placeholder="Cerca blocco (altezza o hash), transazione o indirizzo…"
-          aria-label="Cerca blocco, transazione o indirizzo"
-        />
+        <span class="search-input-wrap">
+          <span class="icon" aria-hidden="true">🔍</span>
+          <input
+            id="search-input"
+            type="text"
+            inputmode="search"
+            placeholder="Cerca blocco (altezza o hash), transazione o indirizzo…"
+            aria-label="Cerca blocco, transazione o indirizzo"
+          />
+        </span>
         <button type="submit">Cerca</button>
       </form>
 

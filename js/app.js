@@ -7,8 +7,37 @@ const searchInput = document.getElementById("search-input");
 
 function setContent(html) {
   app.innerHTML = html;
+  app.classList.remove("fade-in");
+  void app.offsetWidth;
+  app.classList.add("fade-in");
   window.scrollTo(0, 0);
 }
+
+function copyButtonHtml(text) {
+  return `<button type="button" class="copy-btn" data-copy="${fmt.escapeHtml(text)}" title="Copia negli appunti" aria-label="Copia negli appunti">📋</button>`;
+}
+
+function hashWithCopyHtml(text, extraClass = "mono small") {
+  return `<span class="hash-with-copy"><span class="${extraClass}" style="word-break:break-all;">${fmt.escapeHtml(text)}</span>${copyButtonHtml(text)}</span>`;
+}
+
+app.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".copy-btn");
+  if (!btn) return;
+  e.preventDefault();
+  try {
+    await navigator.clipboard.writeText(btn.dataset.copy);
+    const original = btn.textContent;
+    btn.textContent = "✅";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.classList.remove("copied");
+    }, 1200);
+  } catch {
+    // Clipboard API non disponibile: nessuna azione critica da recuperare.
+  }
+});
 
 function renderLoading(msg = "Caricamento…") {
   setContent(`<div class="loading"><div class="spinner"></div><div>${fmt.escapeHtml(msg)}</div></div>`);
@@ -66,12 +95,17 @@ async function router() {
 
 function blockRowHtml(b) {
   return `
-    <li class="block-row">
-      <a class="height" href="#/block/${b.height}">#${fmt.formatNumber(b.height)}</a>
-      <span class="mono small muted">${fmt.shortHash(b.id)}</span>
-      <span class="small muted">${fmt.formatTimeAgo(b.timestamp)}</span>
-      <span class="small">${fmt.formatNumber(b.tx_count)} tx</span>
-      <span class="small muted">${fmt.formatBytes(b.size)}</span>
+    <li>
+      <a class="row-link" href="#/block/${b.height}">
+        <div class="row-top">
+          <span>📦 Blocco #${fmt.formatNumber(b.height)}</span>
+          <span class="row-value muted">${fmt.formatTimeAgo(b.timestamp)}</span>
+        </div>
+        <div class="row-bottom">
+          <span class="mono">${fmt.shortHash(b.id)}</span>
+          <span>${fmt.formatNumber(b.tx_count)} tx · ${fmt.formatBytes(b.size)}</span>
+        </div>
+      </a>
     </li>`;
 }
 
@@ -86,34 +120,46 @@ async function renderHome() {
 
   setContent(`
     <div class="intro-box">
-      <h1>Benvenuto nel Block Explorer di Bitcoin in the Club</h1>
-      <p>
-        Un block explorer ti permette di "guardare dentro" la blockchain di Bitcoin: puoi controllare
-        blocchi, transazioni e indirizzi in tempo reale, in modo semplice e trasparente. Non serve essere
-        esperti: cerca qualcosa nella barra qui sopra, oppure esplora gli ultimi blocchi qui sotto. Se un
-        termine non ti è chiaro, dai un'occhiata al <a href="#/glossario">glossario</a>.
-      </p>
+      <span class="intro-icon">👋</span>
+      <div>
+        <h1>Benvenuto nel Block Explorer di Bitcoin in the Club</h1>
+        <p>
+          Un block explorer ti permette di "guardare dentro" la blockchain di Bitcoin: puoi controllare
+          blocchi, transazioni e indirizzi in tempo reale, in modo semplice e trasparente. Non serve essere
+          esperti: cerca qualcosa nella barra qui sopra, oppure esplora gli ultimi blocchi qui sotto. Se un
+          termine non ti è chiaro, dai un'occhiata al <a href="#/glossario">glossario</a>.
+        </p>
+      </div>
     </div>
 
     <div class="stat-grid">
       <div class="stat-card">
-        <div class="label">Ultimo blocco <span class="help-icon" title="L'altezza indica quanti blocchi sono stati minati dall'inizio di Bitcoin, nel 2009.">?</span></div>
-        <div class="value">#${fmt.formatNumber(tipHeight)}</div>
+        <span class="stat-icon">📦</span>
+        <div>
+          <div class="label">Ultimo blocco <span class="help-icon" title="L'altezza indica quanti blocchi sono stati minati dall'inizio di Bitcoin, nel 2009.">?</span></div>
+          <div class="value">#${fmt.formatNumber(tipHeight)}</div>
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Transazioni in attesa <span class="help-icon" title="Sono le transazioni nella mempool, in attesa di essere incluse in un blocco.">?</span></div>
-        <div class="value">${fmt.formatNumber(mempool.count)}</div>
-        <div class="sub">${fmt.formatBytes(mempool.vsize)} di dati</div>
+        <span class="stat-icon">⏳</span>
+        <div>
+          <div class="label">Transazioni in attesa <span class="help-icon" title="Sono le transazioni nella mempool, in attesa di essere incluse in un blocco.">?</span></div>
+          <div class="value">${fmt.formatNumber(mempool.count)}</div>
+          <div class="sub">${fmt.formatBytes(mempool.vsize)} di dati</div>
+        </div>
       </div>
       <div class="stat-card">
-        <div class="label">Fee consigliata <span class="help-icon" title="Quanto pagare per byte (sat/vB) per far confermare una transazione più o meno velocemente.">?</span></div>
-        <div class="value">${fees.halfHourFee} sat/vB</div>
-        <div class="sub">veloce: ${fees.fastestFee} · economica: ${fees.economyFee}</div>
+        <span class="stat-icon">💸</span>
+        <div>
+          <div class="label">Fee consigliata <span class="help-icon" title="Quanto pagare per byte (sat/vB) per far confermare una transazione più o meno velocemente.">?</span></div>
+          <div class="value">${fees.halfHourFee} sat/vB</div>
+          <div class="sub">veloce: ${fees.fastestFee} · economica: ${fees.economyFee}</div>
+        </div>
       </div>
     </div>
 
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
-      <h2 class="section-title">Ultimi blocchi minati</h2>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
+      <h2 class="section-title" style="margin-top:0;">Ultimi blocchi minati</h2>
       <button class="btn" id="home-refresh">↻ Aggiorna</button>
     </div>
     <ul class="block-list">${blocks.slice(0, 10).map(blockRowHtml).join("")}</ul>
@@ -170,11 +216,17 @@ function txRowHtml(tx) {
   const isCoinbase = Boolean(tx.vin?.[0]?.is_coinbase);
   const totalOut = tx.vout.reduce((s, o) => s + o.value, 0);
   return `
-    <li class="tx-row">
-      <a class="mono small" href="#/tx/${tx.txid}">${fmt.shortHash(tx.txid)}</a>
-      <span class="small muted">${isCoinbase ? "Coinbase (ricompensa)" : `${tx.vin.length} input → ${tx.vout.length} output`}</span>
-      <span class="small">${fmt.formatBtc(totalOut)}</span>
-      ${!isCoinbase ? `<span class="small muted">fee: ${fmt.formatSats(tx.fee)}</span>` : ""}
+    <li>
+      <a class="row-link" href="#/tx/${tx.txid}">
+        <div class="row-top">
+          <span class="mono">${fmt.shortHash(tx.txid)}</span>
+          <span class="row-value">${fmt.formatBtc(totalOut)}</span>
+        </div>
+        <div class="row-bottom">
+          <span>${isCoinbase ? "⛏️ Coinbase (ricompensa)" : `${tx.vin.length} input → ${tx.vout.length} output`}</span>
+          ${!isCoinbase ? `<span>fee: ${fmt.formatSats(tx.fee)}</span>` : ""}
+        </div>
+      </a>
     </li>`;
 }
 
@@ -213,7 +265,7 @@ async function renderBlock(param) {
 
     <div class="card">
       <div class="info-grid">
-        <div class="item"><div class="k">Hash del blocco</div><div class="v mono small">${block.id}</div></div>
+        <div class="item"><div class="k">Hash del blocco</div><div class="v">${hashWithCopyHtml(block.id)}</div></div>
         <div class="item"><div class="k">Numero di transazioni</div><div class="v">${fmt.formatNumber(block.tx_count)}</div></div>
         <div class="item"><div class="k">Dimensione</div><div class="v">${fmt.formatBytes(block.size)}</div></div>
       </div>
@@ -326,7 +378,7 @@ async function renderTx(txid) {
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Transazione</div>
     <h1>Transazione</h1>
-    <p class="mono small" style="word-break:break-all;">${tx.txid}</p>
+    <p>${hashWithCopyHtml(tx.txid)}</p>
     <p>
       ${
         confirmed
@@ -382,11 +434,17 @@ function addrTxListHtml(txs, address) {
       const net = received - sent;
       const confirmed = tx.status.confirmed;
       return `
-      <li class="tx-row">
-        <a class="mono small" href="#/tx/${tx.txid}">${fmt.shortHash(tx.txid)}</a>
-        <span class="small">${confirmed ? `<span class="badge confirmed">confermata</span>` : `<span class="badge pending">in attesa</span>`}</span>
-        <span class="small muted">${confirmed ? fmt.formatTimeAgo(tx.status.block_time) : "mempool"}</span>
-        <span class="amount ${net >= 0 ? "positive" : "negative"}">${fmt.formatBtc(net, { sign: true })}</span>
+      <li>
+        <a class="row-link" href="#/tx/${tx.txid}">
+          <div class="row-top">
+            <span class="mono">${fmt.shortHash(tx.txid)}</span>
+            <span class="row-value amount ${net >= 0 ? "positive" : "negative"}">${fmt.formatBtc(net, { sign: true })}</span>
+          </div>
+          <div class="row-bottom">
+            ${confirmed ? `<span class="badge confirmed">✔ confermata</span>` : `<span class="badge pending">⏳ in attesa</span>`}
+            <span>${confirmed ? fmt.formatTimeAgo(tx.status.block_time) : "in mempool"}</span>
+          </div>
+        </a>
       </li>`;
     })
     .join("");
@@ -406,7 +464,7 @@ async function renderAddress(address) {
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Indirizzo</div>
     <h1>Indirizzo</h1>
-    <p class="mono small" style="word-break:break-all;">${fmt.escapeHtml(address)}</p>
+    <p>${hashWithCopyHtml(address)}</p>
 
     <div class="stat-grid">
       <div class="stat-card">
@@ -460,48 +518,35 @@ async function renderAddress(address) {
 
 // ---------- Glossary ----------
 
+const GLOSSARY_TERMS = [
+  ["📦", "Blocco", `Un "pacchetto" di transazioni verificate e aggiunte in modo permanente alla blockchain, un po' come una pagina di un grande registro contabile pubblico.`],
+  ["📏", "Altezza del blocco", "La posizione di un blocco nella catena, contando da 0 (il primo blocco, minato nel 2009)."],
+  ["🔄", "Transazione", "Un trasferimento di bitcoin da uno o più indirizzi mittenti a uno o più indirizzi destinatari."],
+  ["✔️", "Conferma", "Ogni volta che viene minato un nuovo blocco sopra quello che contiene la tua transazione, il numero di conferme aumenta di 1. Più conferme ha una transazione, più è considerata sicura e irreversibile."],
+  ["⏳", "Mempool", "La \"sala d'attesa\" dove le transazioni restano in attesa di essere incluse in un blocco."],
+  ["💸", "Fee (commissione)", "Quanto si paga ai miner per includere una transazione in un blocco, misurata in satoshi per byte virtuale (sat/vB). Più alta è la fee, più velocemente viene confermata la transazione."],
+  ["🔑", "Hash", "Un'impronta digitale univoca, generata matematicamente, che identifica in modo certo un blocco o una transazione."],
+  ["🏷️", "Indirizzo", "Una sequenza di caratteri simile a un IBAN, usata per ricevere bitcoin."],
+  ["🪙", "UTXO", "Unspent Transaction Output: una porzione di bitcoin non ancora spesa, un po' come una banconota nel portafoglio in attesa di essere usata."],
+  ["⚡", "Satoshi (sat)", "La più piccola unità di bitcoin: 1 BTC = 100.000.000 satoshi."],
+  ["⛏️", "Coinbase", "La transazione speciale, presente in ogni blocco, con cui viene creata la ricompensa per il miner che ha trovato il blocco."],
+  ["📝", "OP_RETURN", "Un tipo speciale di output usato per scrivere piccoli dati sulla blockchain, senza trasferire bitcoin."],
+];
+
 function renderGlossary() {
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Glossario</div>
     <h1>Glossario per principianti</h1>
     <p class="muted">Le parole chiave di Bitcoin, spiegate in modo semplice.</p>
-    <dl class="glossary card">
-      <dt>Blocco</dt>
-      <dd>Un "pacchetto" di transazioni verificate e aggiunte in modo permanente alla blockchain, un po' come una pagina di un grande registro contabile pubblico.</dd>
-
-      <dt>Altezza del blocco</dt>
-      <dd>La posizione di un blocco nella catena, contando da 0 (il primo blocco, minato nel 2009).</dd>
-
-      <dt>Transazione</dt>
-      <dd>Un trasferimento di bitcoin da uno o più indirizzi mittenti a uno o più indirizzi destinatari.</dd>
-
-      <dt>Conferma</dt>
-      <dd>Ogni volta che viene minato un nuovo blocco sopra quello che contiene la tua transazione, il numero di conferme aumenta di 1. Più conferme ha una transazione, più è considerata sicura e irreversibile.</dd>
-
-      <dt>Mempool</dt>
-      <dd>La "sala d'attesa" dove le transazioni restano in attesa di essere incluse in un blocco.</dd>
-
-      <dt>Fee (commissione)</dt>
-      <dd>Quanto si paga ai miner per includere una transazione in un blocco, misurata in satoshi per byte virtuale (sat/vB). Più alta è la fee, più velocemente viene confermata la transazione.</dd>
-
-      <dt>Hash</dt>
-      <dd>Un'impronta digitale univoca, generata matematicamente, che identifica in modo certo un blocco o una transazione.</dd>
-
-      <dt>Indirizzo</dt>
-      <dd>Una sequenza di caratteri simile a un IBAN, usata per ricevere bitcoin.</dd>
-
-      <dt>UTXO</dt>
-      <dd>Unspent Transaction Output: una porzione di bitcoin non ancora spesa, un po' come una banconota nel portafoglio in attesa di essere usata.</dd>
-
-      <dt>Satoshi (sat)</dt>
-      <dd>La più piccola unità di bitcoin: 1 BTC = 100.000.000 satoshi.</dd>
-
-      <dt>Coinbase</dt>
-      <dd>La transazione speciale, presente in ogni blocco, con cui viene creata la ricompensa per il miner che ha trovato il blocco.</dd>
-
-      <dt>OP_RETURN</dt>
-      <dd>Un tipo speciale di output usato per scrivere piccoli dati sulla blockchain, senza trasferire bitcoin.</dd>
-    </dl>
+    <div class="glossary-grid">
+      ${GLOSSARY_TERMS.map(
+        ([icon, term, desc]) => `
+        <div class="glossary-card">
+          <div class="term"><span class="icon">${icon}</span> ${fmt.escapeHtml(term)}</div>
+          <p>${fmt.escapeHtml(desc)}</p>
+        </div>`
+      ).join("")}
+    </div>
   `);
 }
 
