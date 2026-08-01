@@ -21,6 +21,10 @@ function hashWithCopyHtml(text, extraClass = "mono small") {
   return `<span class="hash-with-copy"><span class="${extraClass}" style="word-break:break-all;">${fmt.escapeHtml(text)}</span>${copyButtonHtml(text)}</span>`;
 }
 
+function termLink(label, slug) {
+  return `<a class="term-link" href="#/glossario/${slug}" title="Non sai cosa significa? Vai al glossario">${fmt.escapeHtml(label)}</a>`;
+}
+
 app.addEventListener("click", async (e) => {
   const btn = e.target.closest(".copy-btn");
   if (!btn) return;
@@ -80,7 +84,7 @@ async function router() {
       case "address":
         return await renderAddress(parts[1]);
       case "glossario":
-        return renderGlossary();
+        return renderGlossary(parts[1]);
       case "search":
         return await renderSearch(parts[1]);
       default:
@@ -136,14 +140,14 @@ async function renderHome() {
       <div class="stat-card">
         <span class="stat-icon">📦</span>
         <div>
-          <div class="label">Ultimo blocco <span class="help-icon" title="L'altezza indica quanti blocchi sono stati minati dall'inizio di Bitcoin, nel 2009.">?</span></div>
+          <div class="label">Ultimo blocco <a class="help-icon" href="#/glossario/altezza" title="L'altezza indica quanti blocchi sono stati minati dall'inizio di Bitcoin, nel 2009. Clicca per saperne di più.">?</a></div>
           <div class="value">#${fmt.formatNumber(tipHeight)}</div>
         </div>
       </div>
       <div class="stat-card">
         <span class="stat-icon">⏳</span>
         <div>
-          <div class="label">Transazioni in attesa <span class="help-icon" title="Sono le transazioni nella mempool, in attesa di essere incluse in un blocco.">?</span></div>
+          <div class="label">Transazioni in attesa <a class="help-icon" href="#/glossario/mempool" title="Sono le transazioni nella mempool, in attesa di essere incluse in un blocco. Clicca per saperne di più.">?</a></div>
           <div class="value">${fmt.formatNumber(mempool.count)}</div>
           <div class="sub">${fmt.formatBytes(mempool.vsize)} di dati</div>
         </div>
@@ -151,7 +155,7 @@ async function renderHome() {
       <div class="stat-card">
         <span class="stat-icon">💸</span>
         <div>
-          <div class="label">Fee consigliata <span class="help-icon" title="Quanto pagare per byte (sat/vB) per far confermare una transazione più o meno velocemente.">?</span></div>
+          <div class="label">Fee consigliata <a class="help-icon" href="#/glossario/fee" title="Quanto pagare per byte (sat/vB) per far confermare una transazione più o meno velocemente. Clicca per saperne di più.">?</a></div>
           <div class="value">${fees.halfHourFee} sat/vB</div>
           <div class="sub">veloce: ${fees.fastestFee} · economica: ${fees.economyFee}</div>
         </div>
@@ -255,7 +259,7 @@ async function renderBlock(param) {
     <h1>Blocco #${fmt.formatNumber(block.height)}</h1>
     <p class="muted">
       Minato ${fmt.formatTimeAgo(block.timestamp)} (${fmt.formatDate(block.timestamp)})
-      · <span class="badge confirmed">${fmt.formatNumber(confirmations)} conferme</span>
+      · <span class="badge confirmed">${fmt.formatNumber(confirmations)} ${termLink("conferme", "conferma")}</span>
     </p>
 
     <div class="nav-buttons">
@@ -265,24 +269,25 @@ async function renderBlock(param) {
 
     <div class="card">
       <div class="info-grid">
-        <div class="item"><div class="k">Hash del blocco</div><div class="v">${hashWithCopyHtml(block.id)}</div></div>
-        <div class="item"><div class="k">Numero di transazioni</div><div class="v">${fmt.formatNumber(block.tx_count)}</div></div>
+        <div class="item"><div class="k">${termLink("Hash del blocco", "hash")}</div><div class="v">${hashWithCopyHtml(block.id)}</div></div>
+        <div class="item"><div class="k">Numero di ${termLink("transazioni", "transazione")}</div><div class="v">${fmt.formatNumber(block.tx_count)}</div></div>
         <div class="item"><div class="k">Dimensione</div><div class="v">${fmt.formatBytes(block.size)}</div></div>
       </div>
       <details class="tech-details">
         <summary>Dettagli tecnici avanzati</summary>
         <div class="info-grid">
-          <div class="item"><div class="k">Peso (weight)</div><div class="v">${fmt.formatNumber(block.weight)} WU</div></div>
-          <div class="item"><div class="k">Versione</div><div class="v">${block.version}</div></div>
-          <div class="item"><div class="k">Bits</div><div class="v">${block.bits}</div></div>
-          <div class="item"><div class="k">Nonce</div><div class="v">${block.nonce}</div></div>
-          <div class="item"><div class="k">Difficoltà</div><div class="v">${fmt.formatNumber(Math.round(block.difficulty))}</div></div>
-          <div class="item"><div class="k">Merkle root</div><div class="v mono small">${block.merkle_root}</div></div>
+          <div class="item"><div class="k">${termLink("Peso (weight)", "peso")}</div><div class="v">${fmt.formatNumber(block.weight)} WU</div></div>
+          <div class="item"><div class="k">${termLink("Versione", "versione")}</div><div class="v">${block.version}</div></div>
+          <div class="item"><div class="k">${termLink("Bits", "bits")}</div><div class="v">${block.bits}</div></div>
+          <div class="item"><div class="k">${termLink("Nonce", "nonce")}</div><div class="v">${block.nonce}</div></div>
+          <div class="item"><div class="k">${termLink("Difficoltà", "difficolta")}</div><div class="v">${fmt.formatNumber(Math.round(block.difficulty))}</div></div>
+          <div class="item"><div class="k">${termLink("Merkle root", "merkleroot")}</div><div class="v mono small">${block.merkle_root}</div></div>
         </div>
       </details>
     </div>
 
     <h2 class="section-title">Transazioni in questo blocco</h2>
+    <p class="small muted">Ogni riga è una ${termLink("transazione", "transazione")}: mostra gli ${termLink("input", "input")} e gli ${termLink("output", "output")} coinvolti, più la ${termLink("fee", "fee")} pagata ai miner.</p>
     <ul class="tx-list" id="block-tx-list">${txs.map(txRowHtml).join("")}</ul>
     <div class="pagination">
       <button class="btn" id="block-tx-prev" ${page === 0 ? "disabled" : ""}>← Precedenti</button>
@@ -361,7 +366,7 @@ async function renderTx(txid) {
   const outputsHtml = tx.vout
     .map((vout) => {
       if (vout.scriptpubkey_type === "op_return") {
-        return `<li class="io-row"><span class="addr muted">Dati OP_RETURN (nessun trasferimento)</span><span class="amt">0 BTC</span></li>`;
+        return `<li class="io-row"><span class="addr muted">Dati ${termLink("OP_RETURN", "opreturn")} (nessun trasferimento)</span><span class="amt">0 BTC</span></li>`;
       }
       return `
       <li class="io-row">
@@ -382,8 +387,8 @@ async function renderTx(txid) {
     <p>
       ${
         confirmed
-          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} conferme</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
-          : `<span class="badge pending">⏳ In attesa in mempool</span>`
+          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink("conferme", "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
+          : `<span class="badge pending">⏳ In attesa in ${termLink("mempool", "mempool")}</span>`
       }
     </p>
 
@@ -392,16 +397,16 @@ async function renderTx(txid) {
         ${
           isCoinbase
             ? `Questa è una transazione speciale: il miner ha creato ${fmt.formatBtc(totalOut)} come ricompensa per aver minato il blocco.`
-            : `Sono stati inviati in totale ${fmt.formatBtc(totalOut)}, prelevando ${fmt.formatBtc(totalIn)} dagli indirizzi mittenti. La differenza, ${fmt.formatBtc(tx.fee)}, è la commissione (fee) pagata ai miner (circa ${feeRate} sat/vB).`
+            : `Sono stati inviati in totale ${fmt.formatBtc(totalOut)}, prelevando ${fmt.formatBtc(totalIn)} dagli indirizzi mittenti. La differenza, ${fmt.formatBtc(tx.fee)}, è la ${termLink("commissione (fee)", "fee")} pagata ai miner (circa ${feeRate} sat/vB).`
         }
       </p>
       <div class="io-columns">
         <div>
-          <h3 class="small muted">Da (input)</h3>
+          <h3 class="small muted">Da (${termLink("input", "input")})</h3>
           <ul class="io-list">${inputsHtml}</ul>
         </div>
         <div>
-          <h3 class="small muted">A (output)</h3>
+          <h3 class="small muted">A (${termLink("output", "output")})</h3>
           <ul class="io-list">${outputsHtml}</ul>
         </div>
       </div>
@@ -409,11 +414,11 @@ async function renderTx(txid) {
         <summary>Dettagli tecnici avanzati</summary>
         <div class="info-grid">
           <div class="item"><div class="k">Dimensione</div><div class="v">${fmt.formatBytes(tx.size)}</div></div>
-          <div class="item"><div class="k">Peso (weight)</div><div class="v">${fmt.formatNumber(tx.weight)} WU</div></div>
-          <div class="item"><div class="k">vSize</div><div class="v">${fmt.formatNumber(vsize)} vB</div></div>
-          <div class="item"><div class="k">Versione</div><div class="v">${tx.version}</div></div>
-          <div class="item"><div class="k">Locktime</div><div class="v">${tx.locktime}</div></div>
-          ${!isCoinbase ? `<div class="item"><div class="k">Fee totale</div><div class="v">${fmt.formatBtc(tx.fee)} (${fmt.formatSats(tx.fee)})</div></div>` : ""}
+          <div class="item"><div class="k">${termLink("Peso (weight)", "peso")}</div><div class="v">${fmt.formatNumber(tx.weight)} WU</div></div>
+          <div class="item"><div class="k">${termLink("vSize", "peso")}</div><div class="v">${fmt.formatNumber(vsize)} vB</div></div>
+          <div class="item"><div class="k">${termLink("Versione", "versione")}</div><div class="v">${tx.version}</div></div>
+          <div class="item"><div class="k">${termLink("Locktime", "locktime")}</div><div class="v">${tx.locktime}</div></div>
+          ${!isCoinbase ? `<div class="item"><div class="k">${termLink("Fee totale", "fee")}</div><div class="v">${fmt.formatBtc(tx.fee)} (${fmt.formatSats(tx.fee)})</div></div>` : ""}
         </div>
       </details>
     </div>
@@ -468,7 +473,7 @@ async function renderAddress(address) {
 
     <div class="stat-grid">
       <div class="stat-card">
-        <div class="label">Saldo attuale</div>
+        <div class="label">Saldo attuale <a class="help-icon" href="#/glossario/utxo" title="Il saldo è la somma degli UTXO non spesi ricevuti da questo indirizzo. Clicca per saperne di più.">?</a></div>
         <div class="value">${fmt.formatBtc(balance)}</div>
         <div class="sub">${fmt.formatSats(balance)}</div>
       </div>
@@ -477,7 +482,7 @@ async function renderAddress(address) {
         <div class="value">${fmt.formatBtc(funded)}</div>
       </div>
       <div class="stat-card">
-        <div class="label">Transazioni</div>
+        <div class="label">${termLink("Transazioni", "transazione")}</div>
         <div class="value">${fmt.formatNumber(txCount)}</div>
       </div>
     </div>
@@ -486,7 +491,8 @@ async function renderAddress(address) {
     ${
       txs.length === 0
         ? `<div class="empty-state">Nessuna transazione trovata per questo indirizzo.</div>`
-        : `<ul class="tx-list" id="addr-tx-list">${addrTxListHtml(txs, address)}</ul>
+        : `<p class="small muted">✔ ${termLink("Confermata", "conferma")} = già inclusa in un blocco · ⏳ in attesa = ancora in ${termLink("mempool", "mempool")}.</p>
+           <ul class="tx-list" id="addr-tx-list">${addrTxListHtml(txs, address)}</ul>
            ${txs.length >= 25 ? `<div class="pagination"><button class="btn" id="addr-load-more">Carica altre</button></div>` : ""}`
     }
   `);
@@ -519,35 +525,52 @@ async function renderAddress(address) {
 // ---------- Glossary ----------
 
 const GLOSSARY_TERMS = [
-  ["📦", "Blocco", `Un "pacchetto" di transazioni verificate e aggiunte in modo permanente alla blockchain, un po' come una pagina di un grande registro contabile pubblico.`],
-  ["📏", "Altezza del blocco", "La posizione di un blocco nella catena, contando da 0 (il primo blocco, minato nel 2009)."],
-  ["🔄", "Transazione", "Un trasferimento di bitcoin da uno o più indirizzi mittenti a uno o più indirizzi destinatari."],
-  ["✔️", "Conferma", "Ogni volta che viene minato un nuovo blocco sopra quello che contiene la tua transazione, il numero di conferme aumenta di 1. Più conferme ha una transazione, più è considerata sicura e irreversibile."],
-  ["⏳", "Mempool", "La \"sala d'attesa\" dove le transazioni restano in attesa di essere incluse in un blocco."],
-  ["💸", "Fee (commissione)", "Quanto si paga ai miner per includere una transazione in un blocco, misurata in satoshi per byte virtuale (sat/vB). Più alta è la fee, più velocemente viene confermata la transazione."],
-  ["🔑", "Hash", "Un'impronta digitale univoca, generata matematicamente, che identifica in modo certo un blocco o una transazione."],
-  ["🏷️", "Indirizzo", "Una sequenza di caratteri simile a un IBAN, usata per ricevere bitcoin."],
-  ["🪙", "UTXO", "Unspent Transaction Output: una porzione di bitcoin non ancora spesa, un po' come una banconota nel portafoglio in attesa di essere usata."],
-  ["⚡", "Satoshi (sat)", "La più piccola unità di bitcoin: 1 BTC = 100.000.000 satoshi."],
-  ["⛏️", "Coinbase", "La transazione speciale, presente in ogni blocco, con cui viene creata la ricompensa per il miner che ha trovato il blocco."],
-  ["📝", "OP_RETURN", "Un tipo speciale di output usato per scrivere piccoli dati sulla blockchain, senza trasferire bitcoin."],
+  { slug: "blocco", icon: "📦", term: "Blocco", desc: `Un "pacchetto" di transazioni verificate e aggiunte in modo permanente alla blockchain, un po' come una pagina di un grande registro contabile pubblico.` },
+  { slug: "altezza", icon: "📏", term: "Altezza del blocco", desc: "La posizione di un blocco nella catena, contando da 0 (il primo blocco, minato nel 2009)." },
+  { slug: "transazione", icon: "🔄", term: "Transazione", desc: "Un trasferimento di bitcoin da uno o più indirizzi mittenti a uno o più indirizzi destinatari." },
+  { slug: "conferma", icon: "✔️", term: "Conferma", desc: "Ogni volta che viene minato un nuovo blocco sopra quello che contiene la tua transazione, il numero di conferme aumenta di 1. Più conferme ha una transazione, più è considerata sicura e irreversibile." },
+  { slug: "mempool", icon: "⏳", term: "Mempool", desc: `La "sala d'attesa" dove le transazioni restano in attesa di essere incluse in un blocco.` },
+  { slug: "fee", icon: "💸", term: "Fee (commissione)", desc: "Quanto si paga ai miner per includere una transazione in un blocco, misurata in satoshi per byte virtuale (sat/vB). Più alta è la fee, più velocemente viene confermata la transazione." },
+  { slug: "hash", icon: "🔑", term: "Hash", desc: "Un'impronta digitale univoca, generata matematicamente, che identifica in modo certo un blocco o una transazione." },
+  { slug: "indirizzo", icon: "🏷️", term: "Indirizzo", desc: "Una sequenza di caratteri simile a un IBAN, usata per ricevere bitcoin." },
+  { slug: "utxo", icon: "🪙", term: "UTXO", desc: "Unspent Transaction Output: una porzione di bitcoin non ancora spesa, un po' come una banconota nel portafoglio in attesa di essere usata." },
+  { slug: "satoshi", icon: "⚡", term: "Satoshi (sat)", desc: "La più piccola unità di bitcoin: 1 BTC = 100.000.000 satoshi." },
+  { slug: "coinbase", icon: "⛏️", term: "Coinbase", desc: "La transazione speciale, presente in ogni blocco, con cui viene creata la ricompensa per il miner che ha trovato il blocco." },
+  { slug: "opreturn", icon: "📝", term: "OP_RETURN", desc: "Un tipo speciale di output usato per scrivere piccoli dati sulla blockchain, senza trasferire bitcoin." },
+  { slug: "input", icon: "⬇️", term: "Input", desc: `Ogni transazione preleva fondi da uno o più "input": UTXO precedenti che vengono spesi per finanziare il nuovo trasferimento.` },
+  { slug: "output", icon: "⬆️", term: "Output", desc: `Ogni transazione crea uno o più "output": nuovi UTXO destinati agli indirizzi riceventi, incluso l'eventuale resto per il mittente.` },
+  { slug: "peso", icon: "⚖️", term: "Peso (weight) e vSize", desc: "Misure della \"dimensione effettiva\" di una transazione o blocco, usate per calcolare le fee. Il peso si esprime in unità WU, il vSize (dimensione virtuale) in byte virtuali (vB) ed è pari a peso/4." },
+  { slug: "nonce", icon: "🎲", term: "Nonce", desc: `Un numero che i miner cambiano continuamente cercando un hash del blocco valido: è il cuore del "mining".` },
+  { slug: "difficolta", icon: "🎯", term: "Difficoltà", desc: "Un valore che regola quanto è difficile trovare un blocco valido, aggiustato periodicamente dalla rete per mantenere un blocco ogni circa 10 minuti." },
+  { slug: "merkleroot", icon: "🌳", term: "Merkle root", desc: "Un'unica impronta digitale che riassume in modo sicuro tutte le transazioni di un blocco, permettendo di verificarle senza doverle scaricare tutte." },
+  { slug: "bits", icon: "🔢", term: "Bits", desc: "Una rappresentazione compatta della difficoltà attuale della rete, memorizzata nell'intestazione del blocco." },
+  { slug: "versione", icon: "🔖", term: "Versione", desc: "Indica quali regole del protocollo Bitcoin la transazione o il blocco seguono." },
+  { slug: "locktime", icon: "⏱️", term: "Locktime", desc: "Un valore opzionale che impedisce a una transazione di essere inclusa in un blocco prima di un certo momento o di una certa altezza blocco." },
 ];
 
-function renderGlossary() {
+function renderGlossary(slug) {
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Glossario</div>
     <h1>Glossario per principianti</h1>
-    <p class="muted">Le parole chiave di Bitcoin, spiegate in modo semplice.</p>
+    <p class="muted">Le parole chiave di Bitcoin, spiegate in modo semplice. Sei arrivato qui cliccando un termine? Lo trovi evidenziato qui sotto.</p>
     <div class="glossary-grid">
       ${GLOSSARY_TERMS.map(
-        ([icon, term, desc]) => `
-        <div class="glossary-card">
-          <div class="term"><span class="icon">${icon}</span> ${fmt.escapeHtml(term)}</div>
-          <p>${fmt.escapeHtml(desc)}</p>
+        (t) => `
+        <div class="glossary-card" id="term-${t.slug}">
+          <div class="term"><span class="icon">${t.icon}</span> ${fmt.escapeHtml(t.term)}</div>
+          <p>${fmt.escapeHtml(t.desc)}</p>
         </div>`
       ).join("")}
     </div>
   `);
+
+  if (slug) {
+    const target = document.getElementById(`term-${slug}`);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.classList.add("highlight");
+    }
+  }
 }
 
 // ---------- Wiring ----------
