@@ -564,6 +564,8 @@ const GLOSSARY_TERMS = [
   { slug: "seed", icon: "🌱", term: "Seed phrase", desc: "Le 12 o 24 parole (frase di recupero) da cui vengono generate tutte le chiavi private del tuo wallet. Chi la conosce può spendere i tuoi bitcoin: va custodita con la massima cura e non condivisa mai con nessuno.", guide: "seed-sicura" },
   { slug: "chiaveprivata", icon: "🔐", term: "Chiave privata", desc: "Un numero segreto che dimostra matematicamente la proprietà di un indirizzo e permette di firmare le transazioni per spenderne i fondi. Va protetta come la seed da cui viene derivata." },
   { slug: "wallet", icon: "👛", term: "Wallet", desc: "Il \"portafoglio\": un programma o dispositivo che genera e custodisce le tue chiavi private e ti permette di firmare transazioni. Non contiene fisicamente i bitcoin, che restano sempre sulla blockchain." },
+  { slug: "hardwarewallet", icon: "🔐", term: "Hardware wallet", desc: "Un piccolo dispositivo fisico dedicato a custodire le chiavi private offline, isolate dal computer e da internet. È lo strumento più sicuro per conservare somme importanti nel lungo periodo.", guide: "primo-wallet" },
+  { slug: "phishing", icon: "🎣", term: "Phishing", desc: "Un tentativo di truffa che imita siti, email o messaggi legittimi (un wallet, un exchange, un finto supporto tecnico) per indurti a rivelare la seed, la password o l'accesso al tuo wallet.", guide: "truffe-comuni" },
 ];
 
 function renderGlossary(slug) {
@@ -685,6 +687,245 @@ const GUIDES = [
           Non aspettare: crea un nuovo ${termLink("wallet", "wallet")} con una seed generata offline da un
           dispositivo pulito, e trasferisci subito tutti i fondi al nuovo indirizzo. Una seed compromessa
           resta a rischio per sempre, anche se il furto non è ancora avvenuto.
+        </p>
+      </div>
+    `,
+  },
+  {
+    slug: "controllo-fondi",
+    icon: "🔑",
+    title: "Custodial o non-custodial: chi controlla davvero i tuoi bitcoin",
+    summary: "La differenza più importante da capire prima di comprare il tuo primo bitcoin: chi ha in mano le chiavi private.",
+    body: () => `
+      <div class="card">
+        <p>
+          Quando compri bitcoin, la prima decisione — spesso presa senza saperlo — è dove finiscono a essere
+          custoditi. Tutto dipende da chi controlla le ${termLink("chiavi private", "chiaveprivata")}: tu, o
+          qualcun altro per te. Nella community Bitcoin questo principio si riassume in una frase:
+          <strong>"not your keys, not your coins"</strong> — se non controlli le chiavi, non controlli davvero i fondi.
+        </p>
+      </div>
+
+      <h2 class="section-title">Le due modalità</h2>
+      <div class="glossary-grid">
+        <div class="tip-card good">
+          <div class="tip-title">🏦 Custodial (es. un exchange)</div>
+          <p>Comodo: nessuna seed da gestire, password recuperabile se la dimentichi. Ma i bitcoin restano
+          nel controllo della piattaforma finché non li prelevi — se l'exchange fallisce, viene bloccato o
+          subisce un attacco, potresti non riuscire a riprenderli.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">👛 Non-custodial (${termLink("wallet", "wallet")} personale)</div>
+          <p>Controllo totale: nessun intermediario può bloccarti o congelare i fondi. In cambio arriva la
+          piena responsabilità — se perdi la ${termLink("seed phrase", "seed")} senza backup, i fondi sono
+          persi per sempre, e nessuno può "recuperarti la password".</p>
+        </div>
+      </div>
+
+      <div class="warning-box" style="margin-top:1rem;">
+        <p style="margin:0;">
+          <strong>Un consiglio pratico:</strong> per importi che vuoi davvero possedere nel lungo periodo,
+          preleva su un wallet non-custodial appena puoi. Un exchange può avere senso per comprare o
+          scambiare, ma non è pensato per la conservazione a lungo termine.
+        </p>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/guide/primo-wallet">Come scegliere il tuo primo wallet →</a>
+        <a class="btn" href="#/guide/seed-sicura">Guida alla seed sicura →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "primo-wallet",
+    icon: "👛",
+    title: "Come scegliere il tuo primo wallet",
+    summary: "Wallet software, hardware o custodial: quale scegliere in base a quanto vuoi tenere e per quanto tempo.",
+    body: () => `
+      <div class="card">
+        <p>
+          Un ${termLink("wallet", "wallet")} è il programma o dispositivo che genera e custodisce le tue
+          ${termLink("chiavi private", "chiaveprivata")}. Non esiste "il migliore" in assoluto: la scelta
+          giusta dipende da quanto vuoi tenere e per quanto tempo.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">📱 Wallet mobile o desktop</div>
+          <p>Un'app gratuita sul telefono o sul computer. Comoda per l'uso quotidiano e piccole somme, ma il
+          dispositivo resta connesso a internet — adatta a un "portafoglio spiccioli", non a risparmi importanti.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔐 ${termLink("Hardware wallet", "hardwarewallet")}</div>
+          <p>Un dispositivo fisico dedicato che tiene le chiavi sempre offline. Costa qualche decina di euro,
+          ma è lo standard consigliato per somme importanti o per il risparmio a lungo termine.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🏦 Exchange (custodial)</div>
+          <p>Comodo per comprare e vendere, ma non è davvero "tuo" finché non lo prelevi su un wallet
+          personale — vedi la guida su custodial e non-custodial.</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Consigli pratici per iniziare</h2>
+      <div class="glossary-grid">
+        <div class="tip-card good">
+          <div class="tip-title">🌱 Inizia in piccolo</div>
+          <p>Fai pratica con una somma che puoi permetterti di perdere prima di trasferire cifre importanti.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">👀 Verifica sempre sul dispositivo</div>
+          <p>Con un hardware wallet, controlla l'indirizzo di ricezione sullo schermo del dispositivo stesso,
+          non solo sul computer: un malware potrebbe alterare ciò che vedi a schermo.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">⬇️ Scarica solo da fonti ufficiali</div>
+          <p>Sito del produttore o store ufficiali. Mai da link ricevuti via email, social o messaggi privati.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">🧪 Fai un prelievo di prova</div>
+          <p>Prima di spostare somme importanti, invia una piccola cifra di test e verifica che arrivi correttamente.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/guide/seed-sicura">Guida alla seed sicura →</a>
+        <a class="btn" href="#/guide/controllo-fondi">Custodial vs non-custodial →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "truffe-comuni",
+    icon: "🚨",
+    title: "Riconoscere le truffe Bitcoin più comuni",
+    summary: "I trucchi più diffusi per derubare chi è alle prime armi, e come proteggerti.",
+    body: () => `
+      <div class="card">
+        <p>Bitcoin attira anche i truffatori. Conoscere gli schemi più comuni resta la difesa migliore.</p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card bad">
+          <div class="tip-title">🎁 Regali o raddoppi finti</div>
+          <p>"Invia 1 BTC, ricevine 2 indietro": nessuna iniziativa vera funziona così. Mai, senza eccezioni.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">📈 Investimenti a rendimento garantito</div>
+          <p>Promesse di guadagni fissi e sicuri sono il segno distintivo di uno schema Ponzi.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">☎️ Falso supporto tecnico (${termLink("phishing", "phishing")})</div>
+          <p>Contatti non richiesti su social, Telegram o email che chiedono la seed o l'accesso remoto al dispositivo.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">💔 Truffe sentimentali</div>
+          <p>Relazioni online che, con calma, portano a "investire" su piattaforme finte create apposta.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">🌐 Siti e app clone</div>
+          <p>Copie quasi identiche di wallet o exchange famosi, pensate solo per rubare fondi o credenziali.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">⏰ Pressione e urgenza</div>
+          <p>"Offerta valida solo oggi", "agisci subito o perdi tutto": una tattica classica per non farti riflettere.</p>
+        </div>
+      </div>
+
+      <div class="danger-box" style="margin-top:1rem;">
+        <p style="margin:0;">
+          <strong>La regola d'oro:</strong> se qualcuno ti contatta per primo, ti promette guadagni garantiti,
+          o ti chiede la seed o l'accesso al wallet, è quasi certamente una truffa. Fermati e verifica sempre
+          da canali ufficiali. E anche nella vita reale: evita di rendere pubblico quanto possiedi.
+        </p>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/guide/seed-sicura">Guida alla seed sicura →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "fee-e-conferme",
+    icon: "⏱️",
+    title: "Capire fee e conferme",
+    summary: "Come funzionano le commissioni di rete e perché a volte conviene avere un po' di pazienza.",
+    body: () => `
+      <div class="card">
+        <p>
+          Ogni ${termLink("transazione", "transazione")} compete per lo spazio limitato di ogni
+          ${termLink("blocco", "blocco")}. Quando la rete è congestionata, chi paga una
+          ${termLink("fee", "fee")} più alta viene incluso prima. Nella home di questo explorer trovi sempre
+          le fee consigliate del momento, aggiornate in tempo reale.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🐢 Fee bassa = più lenta</div>
+          <p>Va bene se non hai fretta: la transazione resta in ${termLink("mempool", "mempool")} finché non
+          si libera spazio in un blocco.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🐇 Fee alta = più veloce</div>
+          <p>Consigliata se la transazione è urgente o se il destinatario richiede conferma rapida.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">✔️ Quante ${termLink("conferme", "conferma")} servono?</div>
+          <p>Per piccoli importi spesso basta 1 conferma; per somme importanti conviene aspettarne di più
+          (6 è uno standard comune) prima di considerare il pagamento definitivo.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">📊 La fee non dipende dall'importo</div>
+          <p>Dipende dalla dimensione in byte della transazione (${termLink("peso", "peso")}), non da quanti
+          bitcoin stai inviando: mandare 10€ o 10.000€ può costare la stessa fee.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/glossario/fee">Vai al glossario →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "privacy-bitcoin",
+    icon: "🕵️",
+    title: "Privacy su Bitcoin: pubblica, non anonima",
+    summary: "Cosa può scoprire chiunque guardando un block explorer come questo, e qualche accorgimento pratico.",
+    body: () => `
+      <div class="card">
+        <p>
+          C'è una certa ironia nell'usare un block explorer per capire la privacy: proprio perché puoi
+          guardare qualunque indirizzo o transazione qui dentro, chiunque altro può fare lo stesso con i
+          tuoi. Bitcoin è <strong>pseudonimo, non anonimo</strong>: gli indirizzi non hanno scritto sopra il
+          tuo nome, ma se qualcuno li collega alla tua identità (li condividi pubblicamente, li usi su un
+          exchange con verifica dell'identità, ecc.) può vedere tutta la loro cronologia.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🔄 Riuso degli indirizzi</div>
+          <p>Usare sempre lo stesso ${termLink("indirizzo", "indirizzo")} rende più facile collegare tutte le
+          tue transazioni tra loro. La maggior parte dei wallet ne genera uno nuovo a ogni ricezione:
+          lascia che lo faccia in automatico.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔗 Analisi della blockchain</div>
+          <p>Esistono aziende specializzate nel collegare indirizzi tra loro analizzando i pattern delle
+          transazioni pubbliche.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🤐 Non condividerli senza motivo</div>
+          <p>Evita di postare i tuoi indirizzi su social o forum pubblici se non è strettamente necessario.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <p style="margin:0;" class="muted small">
+          Per chi vuole approfondire esistono tecniche più avanzate (coinjoin, wallet orientati alla
+          privacy): argomenti che vanno oltre questa guida introduttiva, ma buoni da conoscere man mano che
+          ti fai più esperienza.
         </p>
       </div>
     `,
