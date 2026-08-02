@@ -101,6 +101,8 @@ async function router() {
         return renderGlossary(parts[1]);
       case "guide":
         return parts[1] ? renderGuide(parts[1]) : renderGuideIndex();
+      case "blocchi":
+        return await renderAllBlocks();
       case "search":
         return await renderSearch(parts[1]);
       default:
@@ -113,10 +115,13 @@ async function router() {
 
 // ---------- Home ----------
 
-function blockRowHtml(b) {
+function blockRowHtml(b, revealIndex) {
+  const animated = typeof revealIndex === "number";
+  const cls = animated ? " block-reveal" : "";
+  const style = animated ? ` style="animation-delay:${Math.min(revealIndex * 0.06, 1)}s"` : "";
   return `
     <li>
-      <a class="row-link" href="#/block/${b.height}">
+      <a class="row-link${cls}" href="#/block/${b.height}"${style}>
         <div class="row-top">
           <span>📦 Blocco #${fmt.formatNumber(b.height)}</span>
           <span class="row-value muted">${fmt.formatTimeAgo(b.timestamp)}</span>
@@ -204,7 +209,10 @@ async function renderHome() {
       <h2 class="section-title" style="margin-top:0;">Ultimi blocchi minati</h2>
       <button class="btn" id="home-refresh">↻ Aggiorna</button>
     </div>
-    <ul class="block-list">${blocks.slice(0, 10).map(blockRowHtml).join("")}</ul>
+    <ul class="block-list">${blocks.slice(0, 6).map((b) => blockRowHtml(b)).join("")}</ul>
+    <div class="nav-buttons" style="justify-content:center;">
+      <a class="btn btn-primary" href="#/blocchi">📦 Vedi tutti i blocchi →</a>
+    </div>
   `);
 
   document.getElementById("home-refresh").addEventListener("click", () => {
@@ -293,6 +301,61 @@ function startBlockClock(initialHeight, initialTimestamp) {
   setViewCleanup(() => {
     clearInterval(tickTimer);
     clearInterval(pollTimer);
+  });
+}
+
+// ---------- Blocchi (elenco completo) ----------
+
+async function renderAllBlocks() {
+  renderLoading("Carico gli ultimi blocchi…");
+  const blocks = await api.getRecentBlocks();
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / Tutti i blocchi</div>
+    <h1>📦 Tutti i blocchi</h1>
+    <p class="muted">
+      Ogni blocco minato, dal più recente al più vecchio. Scorri e premi "Carica altri blocchi" per
+      andare indietro nel tempo — ogni riga che compare è un nuovo pezzo di storia della blockchain.
+    </p>
+    <ul class="block-list" id="all-blocks-list">${blocks.map((b, i) => blockRowHtml(b, i)).join("")}</ul>
+    <div class="nav-buttons" style="justify-content:center;">
+      <button class="btn btn-primary" id="all-blocks-more">Carica altri blocchi ↓</button>
+    </div>
+  `);
+  wireAllBlocksLoadMore(blocks[blocks.length - 1]?.height);
+}
+
+function wireAllBlocksLoadMore(oldestHeight) {
+  const btn = document.getElementById("all-blocks-more");
+  const list = document.getElementById("all-blocks-list");
+  if (!btn || !list) return;
+  let nextHeight = oldestHeight;
+
+  btn.addEventListener("click", async () => {
+    if (nextHeight == null || nextHeight <= 0) {
+      btn.remove();
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "Carico…";
+    try {
+      const startHeight = nextHeight - 1;
+      if (startHeight < 0) {
+        btn.remove();
+        return;
+      }
+      const more = await api.getRecentBlocks(startHeight);
+      list.insertAdjacentHTML(
+        "beforeend",
+        more.map((b, i) => blockRowHtml(b, i)).join("")
+      );
+      nextHeight = more[more.length - 1]?.height;
+      btn.disabled = false;
+      btn.textContent = "Carica altri blocchi ↓";
+      if (nextHeight === 0 || more.length === 0) btn.remove();
+    } catch {
+      btn.disabled = false;
+      btn.textContent = "Riprova";
+    }
   });
 }
 

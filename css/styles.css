@@ -601,6 +601,54 @@ a:hover {
   transform: translateY(-2px);
   text-decoration: none;
 }
+.block-reveal {
+  opacity: 0;
+  animation:
+    block-pop-in 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    block-pop-flash 0.65s ease-out forwards;
+}
+@keyframes block-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-32px) scale(0.4) rotate(-4deg);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(10px) scale(1.08) rotate(2deg);
+  }
+  65% {
+    transform: translateY(-5px) scale(0.96) rotate(-1deg);
+  }
+  82% {
+    transform: translateY(2px) scale(1.02) rotate(0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+@keyframes block-pop-flash {
+  0% {
+    border-color: var(--border);
+    background-color: var(--card-bg);
+  }
+  45% {
+    border-color: #ffc93c;
+    background-color: rgba(255, 201, 60, 0.28);
+    box-shadow: 0 0 0 3px rgba(255, 201, 60, 0.35);
+  }
+  100% {
+    border-color: var(--border);
+    background-color: var(--card-bg);
+    box-shadow: var(--shadow-sm);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .block-reveal {
+    opacity: 1;
+    animation: none;
+  }
+}
 .row-top {
   display: flex;
   justify-content: space-between;
