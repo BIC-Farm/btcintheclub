@@ -939,6 +939,38 @@ details.tech-details summary:hover {
   color: var(--red);
 }
 
+.wallet-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.wallet-filter-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+}
+.wallet-filter-group .unit-toggle {
+  flex-wrap: wrap;
+  width: fit-content;
+}
+.wallet-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+.wallet-tag {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--pill);
+  background: var(--card-bg-hover);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .treemap-wrap {
   position: relative;
   width: 100%;
