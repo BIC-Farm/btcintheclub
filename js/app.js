@@ -151,6 +151,15 @@ async function renderHome() {
       </div>
     </div>
 
+    <a class="feature-card" href="#/guide/dadi-seed">
+      <span class="feature-icon">🎲</span>
+      <div class="feature-body">
+        <div class="feature-title">Genera una seed con i dadi <span class="feature-badge">Interattivo</span></div>
+        <div class="feature-desc">Prova con mano come dei tiri di dado fisico diventano una mnemonic BIP39 — demo didattica, si sblocca solo offline.</div>
+      </div>
+      <span class="feature-arrow">→</span>
+    </a>
+
     <div class="stat-grid">
       <div class="stat-card">
         <span class="stat-icon">📦</span>
@@ -692,6 +701,14 @@ const GUIDES = [
     `,
   },
   {
+    slug: "dadi-seed",
+    icon: "🎲",
+    title: "Genera una seed con i dadi (demo didattica)",
+    summary: "Prova con mano come dei tiri di dado fisico si trasformano in una mnemonic BIP39. Si sblocca solo offline.",
+    interactive: true,
+    featured: true,
+  },
+  {
     slug: "controllo-fondi",
     icon: "🔑",
     title: "Custodial o non-custodial: chi controlla davvero i tuoi bitcoin",
@@ -930,13 +947,6 @@ const GUIDES = [
       </div>
     `,
   },
-  {
-    slug: "dadi-seed",
-    icon: "🎲",
-    title: "Genera una seed con i dadi (demo didattica)",
-    summary: "Prova con mano come dei tiri di dado fisico si trasformano in una mnemonic BIP39. Si sblocca solo offline.",
-    interactive: true,
-  },
 ];
 
 function renderGuideIndex() {
@@ -949,7 +959,7 @@ function renderGuideIndex() {
         (g) => `
         <li>
           <a class="row-link" href="#/guide/${g.slug}">
-            <div class="row-top"><span>${g.icon} ${fmt.escapeHtml(g.title)}</span></div>
+            <div class="row-top"><span>${g.icon} ${fmt.escapeHtml(g.title)}</span>${g.featured ? `<span class="feature-badge">Interattivo</span>` : ""}</div>
             <div class="row-bottom"><span>${fmt.escapeHtml(g.summary)}</span></div>
           </a>
         </li>`

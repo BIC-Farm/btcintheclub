@@ -38,7 +38,9 @@ Funzionalità principali:
   wordlist inglese ufficiale). Si sblocca solo a connessione disattivata (`navigator.onLine`) e si
   riblocca subito se torna online; le parole non vengono mai salvate, inviate in rete o copiabili, e sono
   pensate esplicitamente **per capire il meccanismo**, non per generare un wallet con fondi reali — per
-  quello resta valido il consiglio della guida "Seed sicura": usare un hardware wallet dedicato.
+  quello resta valido il consiglio della guida "Seed sicura": usare un hardware wallet dedicato. È promossa
+  con una card dedicata in home e con un badge "Interattivo" nell'indice delle guide, per renderla facile
+  da scoprire.
 
 ### Come funziona
 
