@@ -402,6 +402,77 @@ a:hover {
   vertical-align: middle;
 }
 
+.block-clock-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.block-clock-card.block-found {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--orange) 35%, transparent), var(--shadow-md);
+}
+.block-clock {
+  position: relative;
+  width: 6.5rem;
+  height: 6.5rem;
+  flex-shrink: 0;
+}
+.block-clock-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.block-clock-track {
+  fill: none;
+  stroke: var(--hairline);
+  stroke-width: 8;
+}
+.block-clock-progress {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.block-clock-progress.overdue {
+  animation: blockClockPulse 2s ease-in-out infinite;
+}
+@keyframes blockClockPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.block-clock-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.block-clock-height {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.block-clock-elapsed {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.block-clock-info {
+  flex: 1;
+  min-width: 0;
+}
+.block-clock-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  margin: 0 0 0.3rem;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));

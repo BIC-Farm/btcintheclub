@@ -16,6 +16,9 @@ Funzionalità principali:
   Bitcoin e verrai portato direttamente alla pagina giusta.
 - **Home page** con gli ultimi blocchi minati, transazioni in attesa (mempool) e fee consigliate,
   ciascuna con un piccolo tooltip "?" che spiega il termine.
+- **Block Clock**: un orologio live che mostra da quanto tempo non si trova un nuovo blocco, con un anello
+  di progresso verso la media di ~10 minuti. Aggiorna il conteggio ogni secondo e rileva da solo l'arrivo
+  di un nuovo blocco (con una piccola animazione), senza mai ricaricare la pagina.
 - **Dettaglio blocco**: informazioni principali in evidenza, dettagli tecnici avanzati (nonce, difficoltà,
   merkle root, ecc.) nascosti dietro un pannello a scomparsa, elenco transazioni con paginazione, e una
   **mappa visiva della composizione del blocco**: un mosaico di rettangoli (uno per transazione, dati reali
