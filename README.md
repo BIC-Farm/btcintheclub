@@ -17,7 +17,10 @@ Funzionalità principali:
 - **Home page** con gli ultimi blocchi minati, transazioni in attesa (mempool) e fee consigliate,
   ciascuna con un piccolo tooltip "?" che spiega il termine.
 - **Dettaglio blocco**: informazioni principali in evidenza, dettagli tecnici avanzati (nonce, difficoltà,
-  merkle root, ecc.) nascosti dietro un pannello a scomparsa, elenco transazioni con paginazione.
+  merkle root, ecc.) nascosti dietro un pannello a scomparsa, elenco transazioni con paginazione, e una
+  **mappa visiva della composizione del blocco**: un mosaico di rettangoli (uno per transazione, dati reali
+  scaricati al momento), con area proporzionale al peso e colore in base alla fee pagata — passa il mouse
+  per i dettagli, clicca per aprire la transazione.
 - **Dettaglio transazione**: stato (confermata / in attesa), numero di conferme, spiegazione in parole
   semplici di chi ha inviato cosa a chi, elenco input/output.
 - **Dettaglio indirizzo**: saldo attuale, totale ricevuto, cronologia transazioni con importi in

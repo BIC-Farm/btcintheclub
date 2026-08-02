@@ -53,6 +53,7 @@ export const api = {
   getBlock: (hash) => fetchJson(`/block/${hash}`),
   getBlockHeightHash: (height) => fetchText(`/block-height/${height}`),
   getBlockTxs: (hash, startIndex = 0) => fetchJson(`/block/${hash}/txs/${startIndex}`),
+  getBlockSummary: (hash) => fetchJson(`/v1/block/${hash}/summary`),
   getTx: (txid) => fetchJson(`/tx/${txid}`),
   getAddress: (address) => fetchJson(`/address/${address}`),
   getAddressTxs: (address) => fetchJson(`/address/${address}/txs`),
