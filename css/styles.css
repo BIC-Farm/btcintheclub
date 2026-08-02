@@ -331,6 +331,77 @@ a:hover {
   color: var(--ink-soft);
 }
 
+.feature-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.3rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  color: inherit;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.feature-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, var(--orange-soft), transparent 55%, rgba(139, 92, 246, 0.14));
+  pointer-events: none;
+}
+.feature-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--orange);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+.feature-card .feature-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.feature-card .feature-body {
+  flex: 1;
+  z-index: 1;
+}
+.feature-card .feature-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.25rem;
+}
+.feature-card .feature-desc {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+.feature-card .feature-arrow {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+  z-index: 1;
+}
+
+.feature-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--pill);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--orange) 85%, white), var(--orange) 65%);
+  color: #241a08;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
