@@ -14,8 +14,11 @@ Funzionalità principali:
 
 - **Ricerca unica**: incolla un'altezza di blocco, un hash (blocco o transazione) oppure un indirizzo
   Bitcoin e verrai portato direttamente alla pagina giusta.
-- **Home page** con gli ultimi blocchi minati, transazioni in attesa (mempool) e fee consigliate,
+- **Home page** con gli ultimi 6 blocchi minati, transazioni in attesa (mempool) e fee consigliate,
   ciascuna con un piccolo tooltip "?" che spiega il termine.
+- **Tutti i blocchi** (`#/blocchi`): l'elenco completo dei blocchi, con paginazione "Carica altri
+  blocchi" per risalire la catena a ritroso senza limiti, e un effetto di comparsa a cascata (le righe
+  si animano in sequenza) che rende la navigazione più dinamica e "da gioco".
 - **Block Clock**: un orologio live che mostra da quanto tempo non si trova un nuovo blocco, con un anello
   di progresso verso la media di ~10 minuti e un punto luminoso che lo percorre in tempo reale. Aggiorna il
   conteggio ogni secondo e rileva da solo l'arrivo di un nuovo blocco, festeggiandolo con un effetto ping,
