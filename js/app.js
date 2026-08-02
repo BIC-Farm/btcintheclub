@@ -1,6 +1,7 @@
 import { api, ApiError } from "./api.js";
 import * as fmt from "./format.js";
 import { diceRollsToMnemonic, ROLLS_REQUIRED, looksNonRandom } from "./bip39.js";
+import { squarify, computeAreas, feeRateColor, FEE_COLOR_BUCKETS, COINBASE_COLOR } from "./treemap.js";
 
 const app = document.getElementById("app");
 const searchForm = document.getElementById("search-form");
@@ -310,6 +311,19 @@ async function renderBlock(param) {
       </details>
     </div>
 
+    <h2 class="section-title">🧩 Composizione del blocco</h2>
+    <p class="small muted">
+      Ogni rettangolo è una ${termLink("transazione", "transazione")} vera, scaricata in questo momento
+      dalla rete: l'area è proporzionale al suo ${termLink("peso", "peso")}, il colore alla fee pagata.
+      Passa il mouse per i dettagli, clicca per aprirla.
+    </p>
+    <div class="card">
+      <div class="treemap-wrap" id="block-treemap-wrap">
+        <div class="loading"><div class="spinner"></div><div>Carico la composizione del blocco…</div></div>
+      </div>
+      <div class="treemap-legend" id="block-treemap-legend"></div>
+    </div>
+
     <h2 class="section-title">Transazioni in questo blocco</h2>
     <p class="small muted">Ogni riga è una ${termLink("transazione", "transazione")}: mostra gli ${termLink("input", "input")} e gli ${termLink("output", "output")} coinvolti, più la ${termLink("fee", "fee")} pagata ai miner.</p>
     <ul class="tx-list" id="block-tx-list">${txs.map(txRowHtml).join("")}</ul>
@@ -321,6 +335,52 @@ async function renderBlock(param) {
   `);
 
   wireBlockTxPagination(hash, block.tx_count, page);
+  loadBlockTreemap(hash);
+}
+
+async function loadBlockTreemap(hash) {
+  const wrap = document.getElementById("block-treemap-wrap");
+  const legend = document.getElementById("block-treemap-legend");
+  if (!wrap) return;
+
+  try {
+    const summary = await api.getBlockSummary(hash);
+    if (!wrap.isConnected) return; // l'utente ha già cambiato pagina
+
+    if (summary.length === 0) {
+      wrap.innerHTML = `<div class="empty-state">Nessuna transazione da mostrare.</div>`;
+      return;
+    }
+
+    const W = 1000;
+    const H = 560;
+    const sizes = summary.map((tx) => Math.max(tx.vsize || 1, 1));
+    const areas = computeAreas(sizes, W, H);
+    const items = areas.map((area, i) => ({ area, data: { tx: summary[i], isCoinbase: i === 0 } }));
+    const rects = squarify(items, 0, 0, W, H);
+
+    wrap.innerHTML = rects
+      .map((r) => {
+        const { tx, isCoinbase } = r.data;
+        const feeRate = tx.vsize > 0 ? tx.fee / tx.vsize : 0;
+        const color = isCoinbase ? COINBASE_COLOR : feeRateColor(feeRate);
+        const title = isCoinbase
+          ? "⛏️ Coinbase — ricompensa del blocco"
+          : `${fmt.shortHash(tx.txid, 8)} · ${fmt.formatNumber(tx.vsize)} vB · ${fmt.formatSats(tx.fee)} · ${feeRate.toFixed(1)} sat/vB`;
+        return `<a class="treemap-rect" href="#/tx/${tx.txid}" title="${fmt.escapeHtml(title)}" style="left:${(r.x / W) * 100}%; top:${(r.y / H) * 100}%; width:${(r.w / W) * 100}%; height:${(r.h / H) * 100}%; background:${color};"></a>`;
+      })
+      .join("");
+
+    legend.innerHTML =
+      FEE_COLOR_BUCKETS.map(
+        (b) => `<span class="legend-item"><span class="legend-swatch" style="background:${b.color}"></span>${b.label}</span>`
+      ).join("") +
+      `<span class="legend-item"><span class="legend-swatch" style="background:${COINBASE_COLOR}"></span>⛏️ Coinbase</span>`;
+  } catch {
+    if (wrap.isConnected) {
+      wrap.innerHTML = `<div class="empty-state">Impossibile caricare la composizione del blocco.</div>`;
+    }
+  }
 }
 
 function wireBlockTxPagination(hash, txCount, page) {

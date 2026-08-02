@@ -785,6 +785,48 @@ details.tech-details summary:hover {
   color: var(--red);
 }
 
+.treemap-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 560;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--io-bg);
+}
+.treemap-rect {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--card-bg) 45%, transparent);
+  transition: filter 0.1s ease;
+  display: block;
+}
+.treemap-rect:hover {
+  filter: brightness(1.3) saturate(1.2);
+  z-index: 2;
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
+.treemap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.1rem;
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
 .dice-faces {
   display: flex;
   flex-wrap: wrap;
