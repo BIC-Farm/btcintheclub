@@ -154,10 +154,12 @@ async function renderHome() {
 
     <div class="card block-clock-card" id="block-clock-card">
       <div class="block-clock">
+        <div class="block-clock-ping" id="block-clock-ping"></div>
         <svg class="block-clock-ring" viewBox="0 0 120 120" aria-hidden="true">
           <circle class="block-clock-track" cx="60" cy="60" r="52"></circle>
           <circle class="block-clock-progress" id="block-clock-progress" cx="60" cy="60" r="52"
             stroke-dasharray="${2 * Math.PI * 52}" stroke-dashoffset="${2 * Math.PI * 52}"></circle>
+          <circle class="block-clock-dot" id="block-clock-dot" cx="112" cy="60" r="4"></circle>
         </svg>
         <div class="block-clock-center">
           <div class="block-clock-height" id="block-clock-height">#${fmt.formatNumber(blocks[0]?.height ?? tipHeight)}</div>
@@ -224,24 +226,34 @@ function startBlockClock(initialHeight, initialTimestamp) {
   const circumference = 2 * Math.PI * 52;
   let height = initialHeight;
   let blockTime = initialTimestamp;
+  let celebrateUntil = 0;
 
   const card = document.getElementById("block-clock-card");
   const ring = document.getElementById("block-clock-progress");
+  const dot = document.getElementById("block-clock-dot");
+  const ping = document.getElementById("block-clock-ping");
   const heightEl = document.getElementById("block-clock-height");
   const elapsedEl = document.getElementById("block-clock-elapsed");
   const noteEl = document.getElementById("block-clock-note");
-  if (!card || !ring || !heightEl || !elapsedEl || !noteEl) return;
+  if (!card || !ring || !dot || !ping || !heightEl || !elapsedEl || !noteEl) return;
 
   function tick() {
     const elapsed = Math.max(0, Math.floor(Date.now() / 1000 - blockTime));
     const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
     const ss = String(elapsed % 60).padStart(2, "0");
     elapsedEl.textContent = `${mm}:${ss}`;
-    noteEl.textContent = describeBlockClockElapsed(elapsed);
+    if (Date.now() > celebrateUntil) {
+      noteEl.textContent = describeBlockClockElapsed(elapsed);
+    }
 
     const progress = Math.min(elapsed / BLOCK_CLOCK_AVG_SECONDS, 1);
     ring.style.strokeDashoffset = String(circumference * (1 - progress));
     ring.classList.toggle("overdue", elapsed > BLOCK_CLOCK_AVG_SECONDS);
+
+    const angle = progress * 2 * Math.PI;
+    dot.setAttribute("cx", String(60 + 52 * Math.cos(angle)));
+    dot.setAttribute("cy", String(60 + 52 * Math.sin(angle)));
+    dot.style.opacity = progress > 0 && progress < 1 ? "1" : "0";
   }
 
   tick();
@@ -256,7 +268,18 @@ function startBlockClock(initialHeight, initialTimestamp) {
         height = tip;
         blockTime = newBlock.timestamp;
         heightEl.textContent = `#${fmt.formatNumber(height)}`;
+        celebrateUntil = Date.now() + 3000;
+        noteEl.textContent = "🎉 Nuovo blocco trovato proprio ora!";
         tick();
+
+        heightEl.classList.remove("pop");
+        void heightEl.offsetWidth;
+        heightEl.classList.add("pop");
+
+        ping.classList.remove("active");
+        void ping.offsetWidth;
+        ping.classList.add("active");
+
         card.classList.add("block-found");
         setTimeout(() => card.classList.remove("block-found"), 2500);
       }
