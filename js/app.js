@@ -28,6 +28,10 @@ function termLink(label, slug) {
   return `<a class="term-link" href="#/glossario/${slug}" title="Non sai cosa significa? Vai al glossario">${fmt.escapeHtml(label)}</a>`;
 }
 
+function confermeLabel(n) {
+  return n === 1 ? "conferma" : "conferme";
+}
+
 app.addEventListener("click", async (e) => {
   const btn = e.target.closest(".copy-btn");
   if (!btn) return;
@@ -50,12 +54,20 @@ function renderLoading(msg = "Caricamento…") {
   setContent(`<div class="loading"><div class="spinner"></div><div>${fmt.escapeHtml(msg)}</div></div>`);
 }
 
-function renderError(msg) {
+function renderError(msg, extraHtml = "") {
   setContent(`
     <div class="error-box"><strong>Ops!</strong> ${fmt.escapeHtml(msg)}</div>
     <p><a href="#/">← Torna alla home</a></p>
+    ${extraHtml}
   `);
 }
+
+const SEARCH_HELP_HTML = `
+  <div class="nav-buttons">
+    <a class="btn" href="#/glossario">📖 Vai al glossario</a>
+    <a class="btn" href="#/guide">🧭 Sfoglia le guide</a>
+  </div>
+`;
 
 function renderNotFound() {
   setContent(`
@@ -386,7 +398,7 @@ async function renderSearch(rawQuery) {
     } catch {
       // not a transaction either
     }
-    return renderError(`Nessun blocco o transazione trovato con l'hash "${fmt.shortHash(query)}".`);
+    return renderError(`Nessun blocco o transazione trovato con l'hash "${fmt.shortHash(query)}".`, SEARCH_HELP_HTML);
   }
 
   try {
@@ -394,7 +406,8 @@ async function renderSearch(rawQuery) {
     location.hash = `#/address/${query}`;
   } catch {
     renderError(
-      `Nessun risultato trovato per "${query}". Verifica di aver digitato correttamente un'altezza blocco, un hash oppure un indirizzo Bitcoin.`
+      `Nessun risultato trovato per "${query}". Verifica di aver digitato correttamente un'altezza blocco, un hash oppure un indirizzo Bitcoin. Se invece cercavi una spiegazione, prova qui sotto.`,
+      SEARCH_HELP_HTML
     );
   }
 }
@@ -444,7 +457,7 @@ async function renderBlock(param) {
     <h1>Blocco #${fmt.formatNumber(block.height)}</h1>
     <p class="muted">
       Minato ${fmt.formatTimeAgo(block.timestamp)} (${fmt.formatDate(block.timestamp)})
-      · <span class="badge confirmed">${fmt.formatNumber(confirmations)} ${termLink("conferme", "conferma")}</span>
+      · <span class="badge confirmed">${fmt.formatNumber(confirmations)} ${termLink(confermeLabel(confirmations), "conferma")}</span>
     </p>
 
     <div class="nav-buttons">
@@ -631,7 +644,7 @@ async function renderTx(txid) {
     <p>
       ${
         confirmed
-          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink("conferme", "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
+          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink(confermeLabel(confirmations), "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
           : `<span class="badge pending">⏳ In attesa in ${termLink("mempool", "mempool")}</span>`
       }
     </p>
@@ -946,7 +959,7 @@ const GUIDES = [
 
       <h2 class="section-title">Le due modalità</h2>
       <div class="glossary-grid">
-        <div class="tip-card good">
+        <div class="tip-card">
           <div class="tip-title">🏦 Custodial (es. un exchange)</div>
           <p>Comodo: nessuna seed da gestire, password recuperabile se la dimentichi. Ma i bitcoin restano
           nel controllo della piattaforma finché non li prelevi — se l'exchange fallisce, viene bloccato o
