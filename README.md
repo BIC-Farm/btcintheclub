@@ -51,6 +51,13 @@ Funzionalità principali:
   quello resta valido il consiglio della guida "Seed sicura": usare un hardware wallet dedicato. È promossa
   con una card dedicata in home e con un badge "Interattivo" nell'indice delle guide, per renderla facile
   da scoprire.
+- **Scegli il tuo portafoglio** (`#/guide/scegli-wallet`, dentro la sezione Guide): versione semplificata,
+  pensata per chi inizia, dello strumento di [bitcoin.org/it/scegli-il-tuo-portafoglio](https://bitcoin.org/it/scegli-il-tuo-portafoglio).
+  Tre filtri in linguaggio semplice (dove vuoi usarlo, per cosa, quanto vuoi che sia semplice) restringono
+  un elenco curato di 9 wallet non-custodial affidabili e conosciuti (mobile, desktop, hardware), ciascuno
+  con una spiegazione in una frase e badge come "Open source" o "Lightning". Di proposito non contiene link
+  diretti di download verso i singoli siti dei wallet: rimanda sempre alla lista ufficiale di bitcoin.org e
+  ricorda esplicitamente il rischio di siti clone/phishing, con link al termine corrispondente nel glossario.
 
 ### Come funziona
 

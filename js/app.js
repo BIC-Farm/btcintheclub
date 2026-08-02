@@ -28,6 +28,10 @@ function termLink(label, slug) {
   return `<a class="term-link" href="#/glossario/${slug}" title="Non sai cosa significa? Vai al glossario">${fmt.escapeHtml(label)}</a>`;
 }
 
+function confermeLabel(n) {
+  return n === 1 ? "conferma" : "conferme";
+}
+
 app.addEventListener("click", async (e) => {
   const btn = e.target.closest(".copy-btn");
   if (!btn) return;
@@ -50,12 +54,20 @@ function renderLoading(msg = "Caricamento…") {
   setContent(`<div class="loading"><div class="spinner"></div><div>${fmt.escapeHtml(msg)}</div></div>`);
 }
 
-function renderError(msg) {
+function renderError(msg, extraHtml = "") {
   setContent(`
     <div class="error-box"><strong>Ops!</strong> ${fmt.escapeHtml(msg)}</div>
     <p><a href="#/">← Torna alla home</a></p>
+    ${extraHtml}
   `);
 }
+
+const SEARCH_HELP_HTML = `
+  <div class="nav-buttons">
+    <a class="btn" href="#/glossario">📖 Vai al glossario</a>
+    <a class="btn" href="#/guide">🧭 Sfoglia le guide</a>
+  </div>
+`;
 
 function renderNotFound() {
   setContent(`
@@ -386,7 +398,7 @@ async function renderSearch(rawQuery) {
     } catch {
       // not a transaction either
     }
-    return renderError(`Nessun blocco o transazione trovato con l'hash "${fmt.shortHash(query)}".`);
+    return renderError(`Nessun blocco o transazione trovato con l'hash "${fmt.shortHash(query)}".`, SEARCH_HELP_HTML);
   }
 
   try {
@@ -394,7 +406,8 @@ async function renderSearch(rawQuery) {
     location.hash = `#/address/${query}`;
   } catch {
     renderError(
-      `Nessun risultato trovato per "${query}". Verifica di aver digitato correttamente un'altezza blocco, un hash oppure un indirizzo Bitcoin.`
+      `Nessun risultato trovato per "${query}". Verifica di aver digitato correttamente un'altezza blocco, un hash oppure un indirizzo Bitcoin. Se invece cercavi una spiegazione, prova qui sotto.`,
+      SEARCH_HELP_HTML
     );
   }
 }
@@ -444,7 +457,7 @@ async function renderBlock(param) {
     <h1>Blocco #${fmt.formatNumber(block.height)}</h1>
     <p class="muted">
       Minato ${fmt.formatTimeAgo(block.timestamp)} (${fmt.formatDate(block.timestamp)})
-      · <span class="badge confirmed">${fmt.formatNumber(confirmations)} ${termLink("conferme", "conferma")}</span>
+      · <span class="badge confirmed">${fmt.formatNumber(confirmations)} ${termLink(confermeLabel(confirmations), "conferma")}</span>
     </p>
 
     <div class="nav-buttons">
@@ -631,7 +644,7 @@ async function renderTx(txid) {
     <p>
       ${
         confirmed
-          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink("conferme", "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
+          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink(confermeLabel(confirmations), "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
           : `<span class="badge pending">⏳ In attesa in ${termLink("mempool", "mempool")}</span>`
       }
     </p>
@@ -946,7 +959,7 @@ const GUIDES = [
 
       <h2 class="section-title">Le due modalità</h2>
       <div class="glossary-grid">
-        <div class="tip-card good">
+        <div class="tip-card">
           <div class="tip-title">🏦 Custodial (es. un exchange)</div>
           <p>Comodo: nessuna seed da gestire, password recuperabile se la dimentichi. Ma i bitcoin restano
           nel controllo della piattaforma finché non li prelevi — se l'exchange fallisce, viene bloccato o
@@ -1028,10 +1041,22 @@ const GUIDES = [
       </div>
 
       <div class="nav-buttons">
+        <a class="btn btn-primary" href="#/guide/scegli-wallet">🧭 Scegli il tuo portafoglio (strumento interattivo) →</a>
+      </div>
+      <div class="nav-buttons">
         <a class="btn" href="#/guide/seed-sicura">Guida alla seed sicura →</a>
         <a class="btn" href="#/guide/controllo-fondi">Custodial vs non-custodial →</a>
       </div>
     `,
+  },
+  {
+    slug: "scegli-wallet",
+    icon: "🧭",
+    title: "Scegli il tuo portafoglio",
+    summary: "Rispondi a tre domande semplici e filtra un elenco curato di wallet non-custodial affidabili, adatto a chi inizia.",
+    interactive: true,
+    featured: true,
+    component: "wallet-chooser",
   },
   {
     slug: "truffe-comuni",
@@ -1192,6 +1217,7 @@ function renderGuideIndex() {
 function renderGuide(slug) {
   const guide = GUIDES.find((g) => g.slug === slug);
   if (!guide) return renderNotFound();
+  if (guide.component === "wallet-chooser") return renderWalletChooser(guide);
   if (guide.interactive) return renderDiceGenerator(guide);
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
@@ -1364,6 +1390,226 @@ function renderDiceGenerator(guide) {
   });
 
   renderApp();
+}
+
+// ---------- Scegli il tuo portafoglio ----------
+
+const WALLETS = [
+  {
+    name: "BlueWallet",
+    icon: "📱",
+    platform: "mobile",
+    use: ["quotidiano"],
+    level: "semplice",
+    tags: ["Lightning", "Open source"],
+    desc: "Wallet mobile pensato per l'uso di tutti i giorni, con supporto Lightning per pagamenti istantanei ed economici. Interfaccia curata, adatta a chi inizia.",
+  },
+  {
+    name: "Muun",
+    icon: "📱",
+    platform: "mobile",
+    use: ["quotidiano"],
+    level: "semplice",
+    tags: ["Lightning"],
+    desc: "Wallet mobile non-custodial che gestisce Lightning in automatico, senza dover capire i dettagli tecnici dei canali.",
+  },
+  {
+    name: "Phoenix",
+    icon: "📱",
+    platform: "mobile",
+    use: ["quotidiano"],
+    level: "semplice",
+    tags: ["Lightning", "Open source"],
+    desc: "Wallet mobile centrato su Lightning: pagamenti veloci ed economici, con la gestione dei canali semplificata al massimo.",
+  },
+  {
+    name: "Electrum",
+    icon: "💻",
+    platform: "desktop",
+    use: ["quotidiano", "risparmio"],
+    level: "intermedio",
+    tags: ["Open source", "Supporta hardware wallet"],
+    desc: "Uno dei wallet desktop più longevi e affidabili di Bitcoin: leggero, veloce, con opzioni avanzate per chi vuole approfondire.",
+  },
+  {
+    name: "Sparrow Wallet",
+    icon: "💻",
+    platform: "desktop",
+    use: ["risparmio"],
+    level: "intermedio",
+    tags: ["Open source", "Supporta hardware wallet", "Privacy"],
+    desc: "Wallet desktop pensato per usare al meglio un hardware wallet e tenere sotto controllo la privacy delle tue transazioni.",
+  },
+  {
+    name: "Trezor",
+    icon: "🔐",
+    platform: "hardware",
+    use: ["risparmio"],
+    level: "semplice",
+    tags: ["Open source"],
+    desc: "Uno dei primi hardware wallet in assoluto: le chiavi restano sempre offline, e ogni operazione va verificata sullo schermo del dispositivo.",
+  },
+  {
+    name: "Ledger",
+    icon: "🔐",
+    platform: "hardware",
+    use: ["risparmio"],
+    level: "semplice",
+    tags: [],
+    desc: "Hardware wallet molto diffuso, con un'app companion che semplifica la gestione dei fondi mantenendo le chiavi sempre sul dispositivo.",
+  },
+  {
+    name: "BitBox02",
+    icon: "🔐",
+    platform: "hardware",
+    use: ["risparmio"],
+    level: "semplice",
+    tags: ["Open source", "Versione bitcoin-only disponibile"],
+    desc: "Hardware wallet svizzero, compatto, con una versione dedicata esclusivamente a Bitcoin per chi non vuole gestire altro.",
+  },
+  {
+    name: "Coldcard",
+    icon: "🔐",
+    platform: "hardware",
+    use: ["risparmio"],
+    level: "avanzato",
+    tags: ["Open source", "Bitcoin-only", "Air-gapped"],
+    desc: "Hardware wallet bitcoin-only pensato per la massima sicurezza: può restare sempre scollegato da internet (air-gapped).",
+  },
+];
+
+const WALLET_FILTERS = [
+  {
+    key: "platform",
+    label: "Dove vuoi usarlo?",
+    options: [
+      { value: "all", label: "Tutti" },
+      { value: "mobile", label: "📱 Sul telefono" },
+      { value: "desktop", label: "💻 Sul computer" },
+      { value: "hardware", label: "🔐 Dispositivo fisico dedicato" },
+    ],
+  },
+  {
+    key: "use",
+    label: "Per cosa lo userai principalmente?",
+    options: [
+      { value: "all", label: "Tutti" },
+      { value: "quotidiano", label: "🌱 Piccole somme quotidiane" },
+      { value: "risparmio", label: "🏦 Risparmio a lungo termine" },
+    ],
+  },
+  {
+    key: "level",
+    label: "Quanto vuoi che sia semplice?",
+    options: [
+      { value: "all", label: "Tutti" },
+      { value: "semplice", label: "🟢 Il più semplice possibile" },
+      { value: "intermedio", label: "🔵 Va bene qualche opzione in più" },
+      { value: "avanzato", label: "🟣 Sono già a mio agio con la tecnologia" },
+    ],
+  },
+];
+
+function renderWalletChooser(guide) {
+  const filters = { platform: "all", use: "all", level: "all" };
+
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
+    <h1>${guide.icon} ${fmt.escapeHtml(guide.title)}</h1>
+    <div class="intro-box">
+      <span class="intro-icon">🧭</span>
+      <div>
+        <p style="margin:0;">
+          Non esiste "il wallet migliore" in assoluto: la scelta giusta dipende da come vuoi usarlo. Rispondi
+          alle domande qui sotto per restringere l'elenco. Sono tutti wallet <strong>non-custodial</strong>
+          (le chiavi restano sempre in mano tua — vedi la guida su
+          ${termLink("custodial e non-custodial", "controllo-fondi")}) tra i più affidabili e conosciuti della
+          community. Per l'elenco ufficiale aggiornato e i link di download verificati, vai su
+          <a href="https://bitcoin.org/it/scegli-il-tuo-portafoglio" target="_blank" rel="noopener noreferrer">bitcoin.org →</a>
+        </p>
+      </div>
+    </div>
+    <div id="wallet-app"></div>
+  `);
+
+  const walletApp = document.getElementById("wallet-app");
+
+  function matchesFilters(w) {
+    if (filters.platform !== "all" && w.platform !== filters.platform) return false;
+    if (filters.use !== "all" && !w.use.includes(filters.use)) return false;
+    if (filters.level !== "all" && w.level !== filters.level) return false;
+    return true;
+  }
+
+  function filtersHtml() {
+    return WALLET_FILTERS.map(
+      (group) => `
+        <div class="wallet-filter-group">
+          <div class="wallet-filter-label">${fmt.escapeHtml(group.label)}</div>
+          <div class="unit-toggle" role="group" aria-label="${fmt.escapeHtml(group.label)}">
+            ${group.options
+              .map(
+                (opt) =>
+                  `<button type="button" class="unit-btn ${filters[group.key] === opt.value ? "active" : ""}" data-action="filter" data-group="${group.key}" data-value="${opt.value}">${opt.label}</button>`
+              )
+              .join("")}
+          </div>
+        </div>`
+    ).join("");
+  }
+
+  function resultsHtml(results) {
+    if (results.length === 0) {
+      return `<div class="empty-state">Nessun wallet corrisponde a questi filtri. Prova ad allargare la selezione (es. "Tutti").</div>`;
+    }
+    return `
+      <div class="glossary-grid">
+        ${results
+          .map(
+            (w) => `
+          <div class="tip-card wallet-card">
+            <div class="tip-title">${w.icon} ${fmt.escapeHtml(w.name)}</div>
+            <p>${fmt.escapeHtml(w.desc)}</p>
+            ${
+              w.tags.length
+                ? `<div class="wallet-tags">${w.tags.map((t) => `<span class="wallet-tag">${fmt.escapeHtml(t)}</span>`).join("")}</div>`
+                : ""
+            }
+          </div>`
+          )
+          .join("")}
+      </div>`;
+  }
+
+  function render() {
+    const results = WALLETS.filter(matchesFilters);
+    walletApp.innerHTML = `
+      <div class="card wallet-filters">${filtersHtml()}</div>
+      <p class="small muted" style="margin:0.75rem 0;">${results.length} di ${WALLETS.length} wallet corrispondono ai filtri scelti.</p>
+      ${resultsHtml(results)}
+      <div class="danger-box" style="margin-top:1rem;">
+        <p style="margin:0;">
+          <strong>⚠️ Scarica sempre dal sito ufficiale o dagli store ufficiali</strong> (App Store, Google Play),
+          mai da link ricevuti in messaggi, email o pubblicità: i siti clone che imitano wallet famosi sono una
+          delle truffe più comuni (${termLink("phishing", "phishing")}). In caso di dubbio verifica il nome
+          esatto sulla <a href="https://bitcoin.org/it/scegli-il-tuo-portafoglio" target="_blank" rel="noopener noreferrer">lista ufficiale di bitcoin.org</a>.
+        </p>
+      </div>
+      <div class="nav-buttons">
+        <a class="btn" href="#/guide/primo-wallet">← Consigli generali sul primo wallet</a>
+        <a class="btn" href="#/guide/seed-sicura">Guida alla seed sicura →</a>
+      </div>
+    `;
+  }
+
+  walletApp.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action='filter']");
+    if (!btn) return;
+    filters[btn.dataset.group] = btn.dataset.value;
+    render();
+  });
+
+  render();
 }
 
 // ---------- Wiring ----------
