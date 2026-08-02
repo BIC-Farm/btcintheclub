@@ -152,6 +152,26 @@ async function renderHome() {
       </div>
     </div>
 
+    <div class="card block-clock-card" id="block-clock-card">
+      <div class="block-clock">
+        <div class="block-clock-ping" id="block-clock-ping"></div>
+        <svg class="block-clock-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="block-clock-track" cx="60" cy="60" r="52"></circle>
+          <circle class="block-clock-progress" id="block-clock-progress" cx="60" cy="60" r="52"
+            stroke-dasharray="${2 * Math.PI * 52}" stroke-dashoffset="${2 * Math.PI * 52}"></circle>
+          <circle class="block-clock-dot" id="block-clock-dot" cx="112" cy="60" r="4"></circle>
+        </svg>
+        <div class="block-clock-center">
+          <div class="block-clock-height" id="block-clock-height">#${fmt.formatNumber(blocks[0]?.height ?? tipHeight)}</div>
+          <div class="block-clock-elapsed" id="block-clock-elapsed">00:00</div>
+        </div>
+      </div>
+      <div class="block-clock-info">
+        <p class="block-clock-title">⏱️ Block Clock <a class="help-icon" href="#/glossario/tempoblocco" title="I tempi tra un blocco e l'altro variano molto per pura casualità: è normale. Clicca per saperne di più.">?</a></p>
+        <p class="small muted" id="block-clock-note">Tempo trascorso dall'ultimo blocco trovato.</p>
+      </div>
+    </div>
+
     <a class="feature-card" href="#/guide/dadi-seed">
       <span class="feature-icon">🎲</span>
       <div class="feature-body">
@@ -162,13 +182,6 @@ async function renderHome() {
     </a>
 
     <div class="stat-grid">
-      <div class="stat-card">
-        <span class="stat-icon">📦</span>
-        <div>
-          <div class="label">Ultimo blocco <a class="help-icon" href="#/glossario/altezza" title="L'altezza indica quanti blocchi sono stati minati dall'inizio di Bitcoin, nel 2009. Clicca per saperne di più.">?</a></div>
-          <div class="value">#${fmt.formatNumber(tipHeight)}</div>
-        </div>
-      </div>
       <div class="stat-card">
         <span class="stat-icon">⏳</span>
         <div>
@@ -195,7 +208,91 @@ async function renderHome() {
   `);
 
   document.getElementById("home-refresh").addEventListener("click", () => {
-    if (parseHash().length === 0) renderHome().catch(handleError);
+    if (parseHash().length === 0) router();
+  });
+
+  if (blocks[0]) startBlockClock(blocks[0].height, blocks[0].timestamp);
+}
+
+const BLOCK_CLOCK_AVG_SECONDS = 600;
+
+function describeBlockClockElapsed(elapsed) {
+  if (elapsed < 300) return "Ultimo blocco trovato da poco.";
+  if (elapsed <= BLOCK_CLOCK_AVG_SECONDS) return "Il prossimo blocco potrebbe arrivare a breve.";
+  return "Il prossimo blocco può arrivare da un momento all'altro — i tempi variano molto, è normale.";
+}
+
+function startBlockClock(initialHeight, initialTimestamp) {
+  const circumference = 2 * Math.PI * 52;
+  let height = initialHeight;
+  let blockTime = initialTimestamp;
+  let celebrateUntil = 0;
+
+  const card = document.getElementById("block-clock-card");
+  const ring = document.getElementById("block-clock-progress");
+  const dot = document.getElementById("block-clock-dot");
+  const ping = document.getElementById("block-clock-ping");
+  const heightEl = document.getElementById("block-clock-height");
+  const elapsedEl = document.getElementById("block-clock-elapsed");
+  const noteEl = document.getElementById("block-clock-note");
+  if (!card || !ring || !dot || !ping || !heightEl || !elapsedEl || !noteEl) return;
+
+  function tick() {
+    const elapsed = Math.max(0, Math.floor(Date.now() / 1000 - blockTime));
+    const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const ss = String(elapsed % 60).padStart(2, "0");
+    elapsedEl.textContent = `${mm}:${ss}`;
+    if (Date.now() > celebrateUntil) {
+      noteEl.textContent = describeBlockClockElapsed(elapsed);
+    }
+
+    const progress = Math.min(elapsed / BLOCK_CLOCK_AVG_SECONDS, 1);
+    ring.style.strokeDashoffset = String(circumference * (1 - progress));
+    ring.classList.toggle("overdue", elapsed > BLOCK_CLOCK_AVG_SECONDS);
+
+    const angle = progress * 2 * Math.PI;
+    dot.setAttribute("cx", String(60 + 52 * Math.cos(angle)));
+    dot.setAttribute("cy", String(60 + 52 * Math.sin(angle)));
+    dot.style.opacity = progress > 0 && progress < 1 ? "1" : "0";
+  }
+
+  tick();
+  const tickTimer = setInterval(tick, 1000);
+
+  async function poll() {
+    try {
+      const tip = await api.getTipHeight();
+      if (tip > height) {
+        const newHash = await api.getBlockHeightHash(tip);
+        const newBlock = await api.getBlock(newHash);
+        height = tip;
+        blockTime = newBlock.timestamp;
+        heightEl.textContent = `#${fmt.formatNumber(height)}`;
+        celebrateUntil = Date.now() + 3000;
+        noteEl.textContent = "🎉 Nuovo blocco trovato proprio ora!";
+        tick();
+
+        heightEl.classList.remove("pop");
+        void heightEl.offsetWidth;
+        heightEl.classList.add("pop");
+
+        ping.classList.remove("active");
+        void ping.offsetWidth;
+        ping.classList.add("active");
+
+        card.classList.add("block-found");
+        setTimeout(() => card.classList.remove("block-found"), 2500);
+      }
+    } catch {
+      // Errore di rete silenzioso: si riprova al prossimo giro senza interrompere l'orologio.
+    }
+  }
+
+  const pollTimer = setInterval(poll, 20000);
+
+  setViewCleanup(() => {
+    clearInterval(tickTimer);
+    clearInterval(pollTimer);
   });
 }
 
@@ -635,6 +732,7 @@ const GLOSSARY_TERMS = [
   { slug: "wallet", icon: "👛", term: "Wallet", desc: "Il \"portafoglio\": un programma o dispositivo che genera e custodisce le tue chiavi private e ti permette di firmare transazioni. Non contiene fisicamente i bitcoin, che restano sempre sulla blockchain." },
   { slug: "hardwarewallet", icon: "🔐", term: "Hardware wallet", desc: "Un piccolo dispositivo fisico dedicato a custodire le chiavi private offline, isolate dal computer e da internet. È lo strumento più sicuro per conservare somme importanti nel lungo periodo.", guide: "primo-wallet" },
   { slug: "phishing", icon: "🎣", term: "Phishing", desc: "Un tentativo di truffa che imita siti, email o messaggi legittimi (un wallet, un exchange, un finto supporto tecnico) per indurti a rivelare la seed, la password o l'accesso al tuo wallet.", guide: "truffe-comuni" },
+  { slug: "tempoblocco", icon: "⏱️", term: "Tempo di blocco", desc: "In media viene trovato un nuovo blocco ogni 10 minuti circa, ma il tempo reale varia molto da blocco a blocco per pura casualità: attese di pochi secondi o di oltre un'ora sono entrambe normali. La difficoltà si aggiusta periodicamente per mantenere questa media nel lungo periodo." },
 ];
 
 function renderGlossary(slug) {
