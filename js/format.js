@@ -78,6 +78,11 @@ export function formatDate(unixSeconds) {
   });
 }
 
+/** Solo la data, senza orario: utile per stime future incerte, dove un orario preciso darebbe una falsa sensazione di esattezza. */
+export function formatDateOnly(unixSeconds) {
+  return new Date(unixSeconds * 1000).toLocaleDateString("it-IT", { dateStyle: "medium" });
+}
+
 export function formatTimeAgo(unixSeconds) {
   const diffMs = Date.now() - unixSeconds * 1000;
   const diffSec = Math.round(diffMs / 1000);

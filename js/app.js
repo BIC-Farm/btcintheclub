@@ -66,6 +66,7 @@ const SEARCH_HELP_HTML = `
   <div class="nav-buttons">
     <a class="btn" href="#/glossario">📖 Vai al glossario</a>
     <a class="btn" href="#/guide">🧭 Sfoglia le guide</a>
+    <a class="btn" href="#/mining">⛏️ Vai al Mining</a>
   </div>
 `;
 
@@ -226,6 +227,7 @@ async function renderHome() {
     <ul class="block-list">${blocks.slice(0, 6).map((b) => blockRowHtml(b)).join("")}</ul>
     <div class="nav-buttons" style="justify-content:center;">
       <a class="btn btn-primary" href="#/blocchi">📦 Vedi tutti i blocchi →</a>
+      <a class="btn" href="#/mining">⛏️ Scopri il mining →</a>
     </div>
   `);
 
@@ -376,15 +378,15 @@ function wireAllBlocksLoadMore(oldestHeight) {
 // ---------- Mining ----------
 
 const HALVING_INTERVAL = 210000;
-const INITIAL_SUBSIDY_BTC = 50;
+const INITIAL_SUBSIDY_SATS = 50 * 100_000_000;
 
 function halvingInfo(height) {
   const epoch = Math.floor(height / HALVING_INTERVAL);
-  const currentReward = INITIAL_SUBSIDY_BTC / 2 ** epoch;
-  const nextReward = currentReward / 2;
+  const currentRewardSats = Math.floor(INITIAL_SUBSIDY_SATS / 2 ** epoch);
+  const nextRewardSats = Math.floor(currentRewardSats / 2);
   const remainingBlocks = HALVING_INTERVAL - (height % HALVING_INTERVAL);
   const estDate = new Date(Date.now() + remainingBlocks * 600 * 1000);
-  return { currentReward, nextReward, remainingBlocks, estDate };
+  return { currentRewardSats, nextRewardSats, remainingBlocks, estDate };
 }
 
 function formatDurationMs(ms) {
@@ -396,97 +398,120 @@ function formatDurationMs(ms) {
   return `circa ${days} ${days === 1 ? "giorno" : "giorni"} e ${hours} ${hours === 1 ? "ora" : "ore"}`;
 }
 
-function miningCardError(msg) {
-  return `<div class="card"><div class="empty-state">${fmt.escapeHtml(msg)}</div></div>`;
+function miningCardShellHtml(id, extraStyle = "") {
+  return `<div class="card" id="${id}"${extraStyle ? ` style="${extraStyle}"` : ""}><div class="loading"><div class="spinner"></div></div></div>`;
 }
 
-function difficultyCardHtml(d) {
-  if (!d || typeof d.progressPercent !== "number") {
-    return miningCardError("Dati sulla difficoltà non disponibili al momento.");
+function miningErrorHtml(id, msg) {
+  return `
+    <div class="empty-state">${fmt.escapeHtml(msg)}</div>
+    <div class="nav-buttons" style="justify-content:center;">
+      <button type="button" class="btn" data-retry="${id}">Riprova</button>
+    </div>`;
+}
+
+async function loadMiningCard(id, fetchFn, bodyFn, errorMsg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+  try {
+    const data = await fetchFn();
+    const html = bodyFn(data);
+    if (!el.isConnected) return; // l'utente ha già cambiato pagina
+    if (html == null) throw new Error("dati mining non validi");
+    el.innerHTML = html;
+  } catch {
+    if (el.isConnected) el.innerHTML = miningErrorHtml(id, errorMsg);
   }
+}
+
+function difficultyBodyHtml(d) {
+  if (!d || typeof d.progressPercent !== "number") return null;
   const pct = Math.min(100, Math.max(0, d.progressPercent));
   const change = typeof d.difficultyChange === "number" ? d.difficultyChange : null;
   const changeLabel =
     change === null ? "" : `${change >= 0 ? "+" : ""}${change.toFixed(2)}% rispetto ad ora`;
   const changeColor = change !== null && change < 0 ? "var(--red)" : "var(--green)";
   return `
-    <div class="card">
-      <div class="tip-title">🎯 Prossimo aggiustamento della ${termLink("difficoltà", "difficolta")}</div>
-      <div class="dice-progress">
-        <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${pct}%"></div></div>
-        <span class="small muted">${pct.toFixed(1)}%</span>
-      </div>
-      <p class="small muted" style="margin:0.5rem 0 0;">
-        ${changeLabel ? `Variazione stimata: <strong style="color:${changeColor};">${fmt.escapeHtml(changeLabel)}</strong>. ` : ""}
-        ${typeof d.remainingBlocks === "number" ? `Mancano ${fmt.formatNumber(d.remainingBlocks)} blocchi` : ""}
-        ${typeof d.remainingTime === "number" ? ` (${formatDurationMs(d.remainingTime)}).` : "."}
-        ${typeof d.estimatedRetargetDate === "number" ? `Stima: ${fmt.formatDate(d.estimatedRetargetDate / 1000)}.` : ""}
-      </p>
-    </div>`;
+    <div class="tip-title">🎯 Prossimo aggiustamento della ${termLink("difficoltà", "difficolta")}</div>
+    <div class="dice-progress">
+      <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${pct}%"></div></div>
+      <span class="small muted">${pct.toFixed(1)}%</span>
+    </div>
+    <p class="small muted" style="margin:0.5rem 0 0;">
+      ${changeLabel ? `Variazione stimata: <strong style="color:${changeColor};">${fmt.escapeHtml(changeLabel)}</strong> (più difficoltà = mining più costoso = rete più sicura). ` : ""}
+      ${typeof d.remainingBlocks === "number" ? `Mancano ${fmt.formatNumber(d.remainingBlocks)} blocchi` : ""}
+      ${typeof d.remainingTime === "number" ? ` (${formatDurationMs(d.remainingTime)}).` : "."}
+      ${typeof d.estimatedRetargetDate === "number" ? `Stima (data indicativa, non un orario preciso): ${fmt.escapeHtml(fmt.formatDateOnly(d.estimatedRetargetDate / 1000))}.` : ""}
+    </p>`;
 }
 
-function hashrateCardHtml(h) {
-  if (!h || !Number.isFinite(h.currentHashrate)) {
-    return miningCardError("Dati sull'hashrate non disponibili al momento.");
-  }
+function hashrateBodyHtml(h) {
+  if (!h || !Number.isFinite(h.currentHashrate)) return null;
   return `
-    <div class="card">
-      <div class="tip-title">⚡ Potenza di calcolo della rete (${termLink("hashrate", "hashrate")})</div>
-      <div class="block-clock-height" style="font-size:1.8rem;">${fmt.escapeHtml(fmt.formatHashrate(h.currentHashrate))}</div>
-      <p class="small muted" style="margin:0.5rem 0 0;">
-        Somma stimata della potenza di calcolo di tutti i miner del mondo. Più è alta, più costa
-        (in elettricità e hardware) provare ad attaccare la rete.
-      </p>
-    </div>`;
+    <div class="tip-title">⚡ Potenza di calcolo della rete (${termLink("hashrate", "hashrate")})</div>
+    <div class="block-clock-height" style="font-size:1.8rem;">${fmt.escapeHtml(fmt.formatHashrate(h.currentHashrate))}</div>
+    <p class="small muted" style="margin:0.5rem 0 0;">
+      Somma stimata della potenza di calcolo di tutti i miner del mondo. Più è alta, più costa (in
+      elettricità e hardware) provare a riorganizzare blocchi recenti o censurare transazioni — un
+      attacco che comunque non permetterebbe a nessuno di rubare fondi da wallet altrui o creare
+      bitcoin dal nulla.
+    </p>`;
 }
 
-function halvingCardHtml(height) {
-  const { currentReward, nextReward, remainingBlocks, estDate } = halvingInfo(height);
+function halvingBodyHtml(height) {
+  const { currentRewardSats, nextRewardSats, remainingBlocks, estDate } = halvingInfo(height);
   return `
-    <div class="card">
-      <div class="tip-title">✂️ Prossimo ${termLink("halving", "halving")}</div>
-      <p class="small muted" style="margin:0;">
-        Ricompensa attuale per blocco: <strong>${currentReward} BTC</strong>. Tra
-        <strong>${fmt.formatNumber(remainingBlocks)} blocchi</strong> (stima: ${fmt.escapeHtml(estDate.toLocaleDateString("it-IT", { year: "numeric", month: "long" }))})
-        scenderà a <strong>${nextReward} BTC</strong> per blocco.
-      </p>
-    </div>`;
+    <div class="tip-title">✂️ Prossimo ${termLink("halving", "halving")}</div>
+    <p class="small muted" style="margin:0;">
+      Ricompensa attuale per blocco: <strong>${fmt.escapeHtml(fmt.formatBtc(currentRewardSats))}</strong>. Tra
+      <strong>${fmt.formatNumber(remainingBlocks)} blocchi</strong> (stima: ${fmt.escapeHtml(estDate.toLocaleDateString("it-IT", { year: "numeric", month: "long" }))})
+      scenderà a <strong>${fmt.escapeHtml(fmt.formatBtc(nextRewardSats))}</strong> per blocco. Questo dimezzamento
+      periodico è ciò che rende bitcoin scarso: l'emissione di nuove monete rallenta fino a fermarsi al
+      limite fisso di 21 milioni.
+    </p>`;
 }
 
 function normalizeMiningPools(raw) {
   const list = Array.isArray(raw) ? raw : Array.isArray(raw?.pools) ? raw.pools : [];
   const total = typeof raw?.blockCount === "number" ? raw.blockCount : list.reduce((s, p) => s + (p.blockCount ?? p.count ?? 0), 0);
-  return list
+  const sorted = list
     .map((p) => ({ name: p.name || p.poolName || "Sconosciuto", blocks: p.blockCount ?? p.count ?? 0 }))
     .filter((p) => p.blocks > 0)
-    .sort((a, b) => b.blocks - a.blocks)
-    .slice(0, 6)
-    .map((p) => ({ ...p, pct: total > 0 ? (p.blocks / total) * 100 : 0 }));
+    .sort((a, b) => b.blocks - a.blocks);
+  const top = sorted.slice(0, 6).map((p) => ({ ...p, pct: total > 0 ? (p.blocks / total) * 100 : 0 }));
+  const shownBlocks = top.reduce((s, p) => s + p.blocks, 0);
+  const otherPct = total > 0 ? Math.max(0, ((total - shownBlocks) / total) * 100) : 0;
+  return { top, otherPct };
 }
 
-function poolsCardHtml(raw) {
-  const pools = normalizeMiningPools(raw);
-  if (pools.length === 0) {
-    return miningCardError("Dati sui pool di mining non disponibili al momento.");
-  }
+function poolsBodyHtml(raw) {
+  const { top, otherPct } = normalizeMiningPools(raw);
+  if (top.length === 0) return null;
+  const rows = otherPct > 0.5 ? [...top, { name: "Altri pool minori / non identificati", blocks: null, pct: otherPct, muted: true }] : top;
   return `
-    <div class="card" style="grid-column:1 / -1;">
-      <div class="tip-title">🤝 ${termLink("Pool di mining", "poolmining")} più attivi (ultima settimana)</div>
-      <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:0.5rem;">
-        ${pools
-          .map(
-            (p) => `
-          <div>
-            <div class="row-top" style="font-weight:600; font-size:0.85rem;">
-              <span>${fmt.escapeHtml(p.name)}</span>
-              <span class="muted">${p.pct.toFixed(1)}%</span>
-            </div>
-            <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${p.pct}%"></div></div>
-          </div>`
-          )
-          .join("")}
-      </div>
-    </div>`;
+    <div class="tip-title">🤝 ${termLink("Pool di mining", "poolmining")} più attivi (ultima settimana)</div>
+    <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:0.5rem;">
+      ${rows
+        .map(
+          (p) => `
+        <div${p.muted ? ` class="muted"` : ""}>
+          <div class="row-top" style="font-weight:600; font-size:0.85rem;">
+            <span>${fmt.escapeHtml(p.name)}</span>
+            <span class="muted">${p.pct.toFixed(1)}%</span>
+          </div>
+          <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${p.pct}%"></div></div>
+        </div>`
+        )
+        .join("")}
+    </div>
+    <p class="small muted" style="margin:0.75rem 0 0;">
+      La quota riflette quali miner condividono la potenza con quel pool <em>in questo momento</em>: un
+      miner può cambiare pool in pochi minuti, quindi non è una proprietà fissa. I nomi sono
+      un'etichetta rilevata da mempool.space (tag nella coinbase o indirizzo di payout noto), non un
+      dato verificabile crittograficamente. In ogni caso, nessun pool — per quanto grande — può da solo
+      cambiare le regole del protocollo: quelle le fanno rispettare i full node, non i miner.
+    </p>`;
 }
 
 async function renderMining() {
@@ -497,29 +522,37 @@ async function renderMining() {
     <div class="breadcrumb"><a href="#/">Home</a> / Mining</div>
     <h1>⛏️ Mining: come nascono i nuovi blocchi</h1>
     <p class="muted">
-      I miner sono computer specializzati che competono per trovare un ${termLink("nonce", "nonce")} valido e
-      aggiungere il prossimo blocco alla catena, ricevendo in cambio nuovi bitcoin (la transazione
-      ${termLink("coinbase", "coinbase")}) più le fee delle transazioni incluse. Ecco lo stato della rete in
-      tempo reale.
+      I miner sono i computer che tengono viva la rete Bitcoin: elaborano i blocchi e competono tra
+      loro cercando un ${termLink("nonce", "nonce")} valido, ricevendo in cambio nuovi bitcoin (la
+      transazione ${termLink("coinbase", "coinbase")}) più le fee delle transazioni incluse. Ecco lo
+      stato della rete in tempo reale.
     </p>
-    <div id="mining-app" class="glossary-grid"><div class="loading"><div class="spinner"></div></div></div>
+    <div class="glossary-grid" id="mining-grid">
+      ${miningCardShellHtml("mining-hashrate")}
+      <div class="card">${halvingBodyHtml(tipHeight)}</div>
+      ${miningCardShellHtml("mining-difficulty")}
+      ${miningCardShellHtml("mining-pools", "grid-column:1 / -1;")}
+    </div>
   `);
 
-  const miningApp = document.getElementById("mining-app");
-  const [difficulty, hashrate, pools] = await Promise.allSettled([
-    api.getDifficultyAdjustment(),
-    api.getMiningHashrate("3d"),
-    api.getMiningPools("1w"),
-  ]);
+  const grid = document.getElementById("mining-grid");
 
-  if (!miningApp.isConnected) return; // l'utente ha già cambiato pagina
+  function loadAll() {
+    loadMiningCard("mining-hashrate", () => api.getMiningHashrate("3d"), hashrateBodyHtml, "Dati sull'hashrate non disponibili al momento.");
+    loadMiningCard("mining-difficulty", () => api.getDifficultyAdjustment(), difficultyBodyHtml, "Dati sulla difficoltà non disponibili al momento.");
+    loadMiningCard("mining-pools", () => api.getMiningPools("1w"), poolsBodyHtml, "Dati sui pool di mining non disponibili al momento.");
+  }
 
-  miningApp.innerHTML = [
-    difficultyCardHtml(difficulty.status === "fulfilled" ? difficulty.value : null),
-    hashrateCardHtml(hashrate.status === "fulfilled" ? hashrate.value : null),
-    halvingCardHtml(tipHeight),
-    poolsCardHtml(pools.status === "fulfilled" ? pools.value : null),
-  ].join("");
+  grid.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-retry]");
+    if (!btn) return;
+    const id = btn.dataset.retry;
+    if (id === "mining-hashrate") loadMiningCard(id, () => api.getMiningHashrate("3d"), hashrateBodyHtml, "Dati sull'hashrate non disponibili al momento.");
+    if (id === "mining-difficulty") loadMiningCard(id, () => api.getDifficultyAdjustment(), difficultyBodyHtml, "Dati sulla difficoltà non disponibili al momento.");
+    if (id === "mining-pools") loadMiningCard(id, () => api.getMiningPools("1w"), poolsBodyHtml, "Dati sui pool di mining non disponibili al momento.");
+  });
+
+  loadAll();
 }
 
 // ---------- Search resolution ----------
@@ -960,7 +993,7 @@ const GLOSSARY_TERMS = [
   { slug: "hardwarewallet", icon: "🔐", term: "Hardware wallet", desc: "Un piccolo dispositivo fisico dedicato a custodire le chiavi private offline, isolate dal computer e da internet. È lo strumento più sicuro per conservare somme importanti nel lungo periodo.", guide: "primo-wallet" },
   { slug: "phishing", icon: "🎣", term: "Phishing", desc: "Un tentativo di truffa che imita siti, email o messaggi legittimi (un wallet, un exchange, un finto supporto tecnico) per indurti a rivelare la seed, la password o l'accesso al tuo wallet.", guide: "truffe-comuni" },
   { slug: "tempoblocco", icon: "⏱️", term: "Tempo di blocco", desc: "In media viene trovato un nuovo blocco ogni 10 minuti circa, ma il tempo reale varia molto da blocco a blocco per pura casualità: attese di pochi secondi o di oltre un'ora sono entrambe normali. La difficoltà si aggiusta periodicamente per mantenere questa media nel lungo periodo." },
-  { slug: "hashrate", icon: "⚡", term: "Hashrate", desc: "La potenza di calcolo complessiva dedicata dai miner di tutto il mondo a cercare nuovi blocchi, misurata in hash al secondo (oggi si parla di milioni di miliardi di hash al secondo, EH/s). Più è alto, più la rete è sicura e costosa da attaccare." },
+  { slug: "hashrate", icon: "⚡", term: "Hashrate", desc: "La potenza di calcolo complessiva dedicata dai miner di tutto il mondo a cercare nuovi blocchi, misurata in hash al secondo. Oggi la rete Bitcoin supera i 600 EH/s: centinaia di miliardi di miliardi di hash al secondo. Più è alto, più la rete è sicura e costosa da attaccare." },
   { slug: "halving", icon: "✂️", term: "Halving", desc: "Un evento programmato che ogni 210.000 blocchi (circa 4 anni) dimezza la ricompensa in bitcoin che i miner ricevono per ogni blocco trovato. Regola l'emissione di nuovi bitcoin fino al limite di 21 milioni." },
   { slug: "poolmining", icon: "🤝", term: "Pool di mining", desc: "Un gruppo di miner che unisce la propria potenza di calcolo e divide la ricompensa in proporzione al contributo di ciascuno, per avere entrate più regolari invece di dipendere dalla fortuna di trovare un blocco da soli." },
 ];
