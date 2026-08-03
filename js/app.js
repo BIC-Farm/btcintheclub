@@ -384,9 +384,11 @@ function halvingInfo(height) {
   const epoch = Math.floor(height / HALVING_INTERVAL);
   const currentRewardSats = Math.floor(INITIAL_SUBSIDY_SATS / 2 ** epoch);
   const nextRewardSats = Math.floor(currentRewardSats / 2);
-  const remainingBlocks = HALVING_INTERVAL - (height % HALVING_INTERVAL);
+  const blocksIntoEpoch = height % HALVING_INTERVAL;
+  const remainingBlocks = HALVING_INTERVAL - blocksIntoEpoch;
+  const progressPct = (blocksIntoEpoch / HALVING_INTERVAL) * 100;
   const estDate = new Date(Date.now() + remainingBlocks * 600 * 1000);
-  return { currentRewardSats, nextRewardSats, remainingBlocks, estDate };
+  return { currentRewardSats, nextRewardSats, remainingBlocks, progressPct, estDate };
 }
 
 function formatDurationMs(ms) {
@@ -460,10 +462,14 @@ function hashrateBodyHtml(h) {
 }
 
 function halvingBodyHtml(height) {
-  const { currentRewardSats, nextRewardSats, remainingBlocks, estDate } = halvingInfo(height);
+  const { currentRewardSats, nextRewardSats, remainingBlocks, progressPct, estDate } = halvingInfo(height);
   return `
-    <div class="tip-title">✂️ Prossimo ${termLink("halving", "halving")}</div>
-    <p class="small muted" style="margin:0;">
+    <div class="tip-title">✂️ Countdown al prossimo ${termLink("halving", "halving")}</div>
+    <div class="dice-progress">
+      <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${progressPct}%"></div></div>
+      <span class="small muted">${progressPct.toFixed(1)}%</span>
+    </div>
+    <p class="small muted" style="margin:0.5rem 0 0;">
       Ricompensa attuale per blocco: <strong>${fmt.escapeHtml(fmt.formatBtc(currentRewardSats))}</strong>. Tra
       <strong>${fmt.formatNumber(remainingBlocks)} blocchi</strong> (stima: ${fmt.escapeHtml(estDate.toLocaleDateString("it-IT", { year: "numeric", month: "long" }))})
       scenderà a <strong>${fmt.escapeHtml(fmt.formatBtc(nextRewardSats))}</strong> per blocco. Questo dimezzamento
@@ -529,13 +535,30 @@ async function renderMining() {
     </p>
     <div class="glossary-grid" id="mining-grid">
       ${miningCardShellHtml("mining-hashrate")}
-      <div class="card">${halvingBodyHtml(tipHeight)}</div>
+      <div class="card" id="mining-halving">${halvingBodyHtml(tipHeight)}</div>
       ${miningCardShellHtml("mining-difficulty")}
       ${miningCardShellHtml("mining-pools", "grid-column:1 / -1;")}
     </div>
   `);
 
   const grid = document.getElementById("mining-grid");
+  let lastHeight = tipHeight;
+
+  async function pollTipHeight() {
+    try {
+      const tip = await api.getTipHeight();
+      if (tip > lastHeight) {
+        lastHeight = tip;
+        const halvingEl = document.getElementById("mining-halving");
+        if (halvingEl) halvingEl.innerHTML = halvingBodyHtml(lastHeight);
+      }
+    } catch {
+      // Errore di rete silenzioso: si riprova al prossimo giro senza interrompere il countdown.
+    }
+  }
+
+  const pollTimer = setInterval(pollTipHeight, 30000);
+  setViewCleanup(() => clearInterval(pollTimer));
 
   function loadAll() {
     loadMiningCard("mining-hashrate", () => api.getMiningHashrate("3d"), hashrateBodyHtml, "Dati sull'hashrate non disponibili al momento.");
