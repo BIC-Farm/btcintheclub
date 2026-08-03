@@ -78,6 +78,11 @@ export function formatDate(unixSeconds) {
   });
 }
 
+/** Solo la data, senza orario: utile per stime future incerte, dove un orario preciso darebbe una falsa sensazione di esattezza. */
+export function formatDateOnly(unixSeconds) {
+  return new Date(unixSeconds * 1000).toLocaleDateString("it-IT", { dateStyle: "medium" });
+}
+
 export function formatTimeAgo(unixSeconds) {
   const diffMs = Date.now() - unixSeconds * 1000;
   const diffSec = Math.round(diffMs / 1000);
@@ -105,4 +110,26 @@ export function shortHash(hash, len = 10) {
 
 export function shortAddress(addr, len = 8) {
   return shortHash(addr, len);
+}
+
+const HASHRATE_UNITS = [
+  { unit: "H/s", factor: 1 },
+  { unit: "KH/s", factor: 1e3 },
+  { unit: "MH/s", factor: 1e6 },
+  { unit: "GH/s", factor: 1e9 },
+  { unit: "TH/s", factor: 1e12 },
+  { unit: "PH/s", factor: 1e15 },
+  { unit: "EH/s", factor: 1e18 },
+  { unit: "ZH/s", factor: 1e21 },
+];
+
+export function formatHashrate(hashesPerSecond) {
+  if (!Number.isFinite(hashesPerSecond) || hashesPerSecond <= 0) return "—";
+  let chosen = HASHRATE_UNITS[0];
+  for (const u of HASHRATE_UNITS) {
+    if (hashesPerSecond >= u.factor) chosen = u;
+  }
+  const value = hashesPerSecond / chosen.factor;
+  const decimals = value >= 100 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(decimals)} ${chosen.unit}`;
 }

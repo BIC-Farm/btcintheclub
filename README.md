@@ -23,6 +23,20 @@ Funzionalità principali:
   di progresso verso la media di ~10 minuti e un punto luminoso che lo percorre in tempo reale. Aggiorna il
   conteggio ogni secondo e rileva da solo l'arrivo di un nuovo blocco, festeggiandolo con un effetto ping,
   il numero che rimbalza e un messaggio celebrativo temporaneo — senza mai ricaricare la pagina.
+- **Mining** (`#/mining`, in header): lo stato del mining in tempo reale spiegato in parole semplici —
+  hashrate della rete, countdown al prossimo aggiustamento della difficoltà, countdown al prossimo halving
+  (con ricompensa attuale/futura nell'unità scelta, BTC o sats) e i pool di mining più attivi dell'ultima
+  settimana con relativa percentuale di blocchi trovati. Ogni sezione si carica in modo indipendente e ha
+  un proprio pulsante "Riprova" se i dati non arrivano, così un problema su una singola fonte non blocca
+  tutta la pagina. La card dei pool ricorda esplicitamente che le quote sono etichette rilevate da
+  mempool.space (non un dato verificabile crittograficamente), che i miner possono cambiare pool in pochi
+  minuti, e che nessun pool può da solo cambiare le regole del protocollo.
+- **Mining** (`#/mining`, in header): stato della rete in tempo reale in linguaggio semplice — progresso
+  verso il prossimo aggiustamento della difficoltà con data stimata, hashrate attuale della rete, countdown
+  al prossimo halving (ricompensa attuale e futura, calcolate lato client dall'altezza corrente), e i pool
+  di mining più attivi dell'ultima settimana con percentuale di blocchi trovati. Ogni sezione si carica in
+  modo indipendente: se una fonte dati non risponde, mostra un avviso solo per quella card senza rompere il
+  resto della pagina.
 - **Dettaglio blocco**: informazioni principali in evidenza, dettagli tecnici avanzati (nonce, difficoltà,
   merkle root, ecc.) nascosti dietro un pannello a scomparsa, elenco transazioni con paginazione, e una
   **mappa visiva della composizione del blocco**: un mosaico di rettangoli (uno per transazione, dati reali
