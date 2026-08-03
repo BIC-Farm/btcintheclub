@@ -61,6 +61,9 @@ export const api = {
     fetchJson(`/address/${address}/txs/chain/${lastTxid}`),
   getMempool: () => fetchJson("/mempool"),
   getFeeEstimates: () => fetchJson("/v1/fees/recommended"),
+  getDifficultyAdjustment: () => fetchJson("/v1/difficulty-adjustment"),
+  getMiningHashrate: (period = "3d") => fetchJson(`/v1/mining/hashrate/${period}`),
+  getMiningPools: (period = "1w") => fetchJson(`/v1/mining/pools/${period}`),
 };
 
 export { ApiError };
