@@ -38,10 +38,29 @@ Funzionalità principali:
   **mappa visiva della composizione del blocco**: un mosaico di rettangoli (uno per transazione, dati reali
   scaricati al momento), con area proporzionale al peso e colore in base alla fee pagata — passa il mouse
   per i dettagli, clicca per aprire la transazione.
-- **Dettaglio transazione**: stato (confermata / in attesa), numero di conferme, spiegazione in parole
-  semplici di chi ha inviato cosa a chi, elenco input/output.
-- **Dettaglio indirizzo**: saldo attuale, totale ricevuto, cronologia transazioni con importi in
-  entrata/uscita evidenziati.
+- **Verifica tu stesso il blocco** (nella pagina di dettaglio blocco): un pulsante che ricalcola *nel
+  browser*, con la sola SHA-256 nativa e i dati già scaricati, se la merkle root dichiarata corrisponde
+  davvero alle transazioni e se l'hash del blocco è una proof-of-work autentica — senza inviare nulla a
+  nessun server. I due controlli sono indipendenti, per capire subito quale, se non torna.
+- **Confronto con una seconda fonte indipendente** (blocco e transazione): un pulsante che rifà la stessa
+  richiesta a blockstream.info e confronta campo per campo con la risposta di mempool.space, per non
+  fidarsi ciecamente di un'unica fonte.
+- **Dettaglio transazione**: stato (confermata / in attesa) con **tracker live delle conferme** — si
+  aggiorna da solo ogni 15 secondi finché resti sulla pagina, senza mai ricaricarla — numero di conferme,
+  spiegazione in parole semplici di chi ha inviato cosa a chi (con controvalore in EUR quando disponibile),
+  elenco input/output.
+- **Dettaglio indirizzo**: saldo attuale (con controvalore in EUR quando disponibile), totale ricevuto,
+  cronologia transazioni con importi in entrata/uscita evidenziati, e un pulsante per **salvare l'indirizzo
+  nei preferiti** (solo nel browser, nessun account necessario).
+- **I tuoi indirizzi salvati** (in home, se ne hai salvato almeno uno): saldo aggiornato dei tuoi indirizzi
+  preferiti senza doverli ripescare ogni volta dal wallet.
+- **Verifica un indirizzo prima di inviare** (`#/guide/verifica-indirizzo`, dentro la sezione Guide):
+  controlla il checksum (base58check o bech32/bech32m) di un indirizzo — legacy, P2SH, SegWit o Taproot —
+  interamente nel browser, mostra l'indirizzo raggruppato a blocchi per un confronto manuale più facile, e
+  segnala se ha già una cronologia on-chain. Conferma solo che l'indirizzo è scritto correttamente, non che
+  appartenga a chi pensi: lo strumento lo ricorda esplicitamente.
+- **Quanto costa inviare bitcoin adesso?** (in home): le fee consigliate del momento tradotte in sat e in
+  euro (se il cambio è disponibile) per tre velocità diverse, su una transazione tipo.
 - **Glossario** (`#/glossario`) con oltre 20 termini di Bitcoin spiegati in italiano semplice. Ogni
   parola tecnica che compare nell'app (hash, fee, conferme, input/output, nonce, difficoltà, ecc.) è
   un link sottolineato che porta dritto alla voce corrispondente del glossario, evidenziata al volo.
@@ -68,12 +87,22 @@ Funzionalità principali:
   con una spiegazione in una frase e badge come "Open source" o "Lightning". Di proposito non contiene link
   diretti di download verso i singoli siti dei wallet: rimanda sempre alla lista ufficiale di bitcoin.org e
   ricorda esplicitamente il rischio di siti clone/phishing, con link al termine corrispondente nel glossario.
+- **Gestisci il tuo nodo** (`#/guide/gestisci-nodo`, dentro la sezione Guide): il passo successivo a un
+  wallet non-custodial per chi vuole la sovranità completa — perché avere un proprio nodo Bitcoin conta,
+  cosa cambia in termini di verifica e privacy, e da dove iniziare (Bitcoin Core, Umbrel, myNode, RaspiBlitz).
+- **Banner di trasparenza permanente** in fondo a ogni pagina: ricorda che questo sito è un client di
+  un'unica fonte terza (mempool.space), non un modo "trust-minimized" di verificare i dati, con link alla
+  guida sul nodo.
+- **Glossario ampliato** con SegWit, Taproot, PSBT, Multisig e Lightning Network, oltre ai ~25 termini di
+  base — ogni indirizzo mostrato nell'app ha un prefisso (`1…`, `3…`, `bc1q…`, `bc1p…`) che ora è spiegato.
 
 ### Come funziona
 
 È un sito statico (HTML + CSS + JavaScript vanilla, nessuna build necessaria) che recupera i dati in
-tempo reale dalle API pubbliche di [mempool.space](https://mempool.space). Non servono chiavi API né
-un backend proprio.
+tempo reale dalle API pubbliche di [mempool.space](https://mempool.space), con un confronto opzionale
+verso [blockstream.info](https://blockstream.info) per chi vuole un secondo parere. Non servono chiavi
+API né un backend proprio: tutto (formattazione, calcoli di verifica, checksum degli indirizzi) gira nel
+browser di chi visita il sito.
 
 ### Come avviarlo in locale
 
@@ -93,9 +122,15 @@ npx serve .
 ### Struttura del progetto
 
 ```
-index.html        pagina principale (header, barra di ricerca, contenitore app)
-css/styles.css     stile dell'interfaccia
-js/api.js          chiamate alle API di mempool.space
-js/format.js       funzioni di formattazione (date, importi, hash abbreviati, ecc.)
-js/app.js          router e logica delle varie viste (home, blocco, transazione, indirizzo, glossario)
+index.html          pagina principale (header, barra di ricerca, contenitore app)
+css/styles.css       stile dell'interfaccia
+js/api.js            chiamate alle API di mempool.space e al confronto con blockstream.info
+js/format.js         funzioni di formattazione (date, importi, hash abbreviati, cambio EUR, ecc.)
+js/app.js            router e logica delle varie viste (home, blocco, transazione, indirizzo, glossario, guide, mining)
+js/watchlist.js       salvataggio locale degli indirizzi preferiti (localStorage)
+js/addresscheck.js    verifica del checksum di un indirizzo (base58check, bech32/bech32m)
+js/blockverify.js     ricalcolo client-side di merkle root e proof-of-work di un blocco
+js/bip39.js           generazione della mnemonic BIP39 dai tiri di dado
+js/bip39-wordlist.js  wordlist inglese ufficiale BIP39
+js/treemap.js         algoritmo squarified treemap per la composizione del blocco
 ```

@@ -123,6 +123,17 @@ const HASHRATE_UNITS = [
   { unit: "ZH/s", factor: 1e21 },
 ];
 
+/** Converte satoshi in euro dato un cambio BTC/EUR; null se il cambio non è disponibile. */
+export function formatFiat(sats, eurRate) {
+  if (!Number.isFinite(eurRate) || eurRate <= 0) return null;
+  const eur = (sats / SATS_PER_BTC) * eurRate;
+  return eur.toLocaleString("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: eur < 10 ? 2 : 0,
+  });
+}
+
 export function formatHashrate(hashesPerSecond) {
   if (!Number.isFinite(hashesPerSecond) || hashesPerSecond <= 0) return "—";
   let chosen = HASHRATE_UNITS[0];

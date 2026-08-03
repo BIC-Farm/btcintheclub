@@ -288,6 +288,11 @@ a:hover {
   font-size: 0.8rem;
   padding: 1.5rem 1rem 2.5rem;
 }
+.trust-note {
+  max-width: 640px;
+  margin: 0.75rem auto 0;
+  opacity: 0.85;
+}
 
 /* Generic components */
 .card {
