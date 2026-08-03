@@ -45,6 +45,21 @@ async function fetchText(path) {
   return (await res.text()).trim();
 }
 
+const CROSSCHECK_BASE_URL = "https://blockstream.info/api";
+
+async function fetchJsonFrom(url) {
+  let res;
+  try {
+    res = await fetch(url);
+  } catch {
+    throw new ApiError("Impossibile contattare la fonte di verifica.", 0);
+  }
+  if (!res.ok) {
+    throw new ApiError(`Errore della fonte di verifica (${res.status}).`, res.status);
+  }
+  return res.json();
+}
+
 export const api = {
   getTipHeight: () => fetchText("/blocks/tip/height").then(Number),
   getTipHash: () => fetchText("/blocks/tip/hash"),
@@ -64,6 +79,9 @@ export const api = {
   getDifficultyAdjustment: () => fetchJson("/v1/difficulty-adjustment"),
   getMiningHashrate: (period = "3d") => fetchJson(`/v1/mining/hashrate/${period}`),
   getMiningPools: (period = "1w") => fetchJson(`/v1/mining/pools/${period}`),
+  getPrices: () => fetchJson("/v1/prices"),
+  crossCheckBlock: (hash) => fetchJsonFrom(`${CROSSCHECK_BASE_URL}/block/${hash}`),
+  crossCheckTx: (txid) => fetchJsonFrom(`${CROSSCHECK_BASE_URL}/tx/${txid}`),
 };
 
 export { ApiError };

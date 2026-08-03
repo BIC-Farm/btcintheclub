@@ -2,6 +2,9 @@ import { api, ApiError } from "./api.js";
 import * as fmt from "./format.js";
 import { diceRollsToMnemonic, ROLLS_REQUIRED, looksNonRandom } from "./bip39.js";
 import { squarify, computeAreas, feeRateColor, FEE_COLOR_BUCKETS, COINBASE_COLOR } from "./treemap.js";
+import { getWatchlist, isWatched, addToWatchlist, removeFromWatchlist } from "./watchlist.js";
+import { validateAddress, chunkAddress } from "./addresscheck.js";
+import { verifyBlock } from "./blockverify.js";
 
 const app = document.getElementById("app");
 const searchForm = document.getElementById("search-form");
@@ -149,14 +152,78 @@ function blockRowHtml(b, revealIndex) {
     </li>`;
 }
 
+const TX_VSIZE_ESTIMATE = 140; // vB: stima tipica per una transazione semplice (1 input, 2 output, SegWit)
+
+function feeSpeedRowsHtml(fees, eurRate) {
+  const tiers = [
+    { label: "🚀 Veloce (prossimo blocco)", rate: fees.fastestFee, eta: "circa 10 minuti" },
+    { label: "🙂 Normale", rate: fees.halfHourFee, eta: "circa 30 minuti" },
+    { label: "🐢 Economica", rate: fees.economyFee, eta: "da qualche ora, nessuna garanzia" },
+  ];
+  return tiers
+    .map((t) => {
+      const sats = Math.round(t.rate * TX_VSIZE_ESTIMATE);
+      const fiat = fmt.formatFiat(sats, eurRate);
+      return `
+        <div style="padding:0.5rem 0; border-top:1px solid var(--hairline);">
+          <div class="row-top" style="font-weight:600;">
+            <span>${t.label}</span>
+            <span>${fmt.formatSats(sats)}${fiat ? ` · ~${fiat}` : ""}</span>
+          </div>
+          <div class="row-bottom"><span class="muted">${t.eta}</span><span class="muted">${t.rate} sat/vB</span></div>
+        </div>`;
+    })
+    .join("");
+}
+
+function watchlistSectionHtml(watchedResults, eurRate) {
+  if (watchedResults.length === 0) return "";
+  const items = watchedResults
+    .map(({ addr, info }) => {
+      if (!info) {
+        return `<li><a class="row-link" href="#/address/${addr}"><div class="row-top"><span class="mono">${fmt.shortAddress(addr)}</span><span class="muted small">dati non disponibili</span></div></a></li>`;
+      }
+      const funded = info.chain_stats.funded_txo_sum + info.mempool_stats.funded_txo_sum;
+      const spent = info.chain_stats.spent_txo_sum + info.mempool_stats.spent_txo_sum;
+      const balance = funded - spent;
+      const fiat = fmt.formatFiat(balance, eurRate);
+      return `
+        <li>
+          <a class="row-link" href="#/address/${addr}">
+            <div class="row-top">
+              <span class="mono">${fmt.shortAddress(addr)}</span>
+              <span class="row-value">${fmt.formatBtc(balance)}</span>
+            </div>
+            <div class="row-bottom"><span class="muted">${fiat ? `~${fiat}` : ""}</span></div>
+          </a>
+        </li>`;
+    })
+    .join("");
+  return `
+    <h2 class="section-title">⭐ I tuoi indirizzi salvati</h2>
+    <ul class="block-list">${items}</ul>
+  `;
+}
+
 async function renderHome() {
   renderLoading("Carico gli ultimi dati dalla blockchain…");
-  const [tipHeight, blocks, mempool, fees] = await Promise.all([
+  const watchedAddresses = getWatchlist();
+  const [tipHeight, blocks, mempool, fees, pricesResult, watchedResults] = await Promise.all([
     api.getTipHeight(),
     api.getRecentBlocks(),
     api.getMempool(),
     api.getFeeEstimates(),
+    api.getPrices().catch(() => null),
+    Promise.all(
+      watchedAddresses.map((addr) =>
+        api
+          .getAddress(addr)
+          .then((info) => ({ addr, info }))
+          .catch(() => ({ addr, info: null }))
+      )
+    ),
   ]);
+  const eurRate = pricesResult?.EUR ?? null;
 
   setContent(`
     <div class="intro-box">
@@ -171,6 +238,8 @@ async function renderHome() {
         </p>
       </div>
     </div>
+
+    ${watchlistSectionHtml(watchedResults, eurRate)}
 
     <div class="card block-clock-card" id="block-clock-card">
       <div class="block-clock">
@@ -218,6 +287,16 @@ async function renderHome() {
           <div class="sub">veloce: ${fees.fastestFee} · economica: ${fees.economyFee}</div>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="tip-title">🧮 Quanto costa inviare bitcoin adesso?</div>
+      <p class="small muted" style="margin:0.35rem 0 0;">
+        Stima per una transazione semplice (circa ${TX_VSIZE_ESTIMATE} vB: 1 input, 2 output). Una tua
+        transazione reale può costare di più o di meno a seconda di quanti input/output usa.
+      </p>
+      ${feeSpeedRowsHtml(fees, eurRate)}
+      ${eurRate ? "" : `<p class="small muted" style="margin:0.5rem 0 0;">Cambio EUR non disponibile al momento: mostro solo l'importo in sat.</p>`}
     </div>
 
     <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
@@ -704,6 +783,24 @@ async function renderBlock(param) {
       <div class="treemap-legend" id="block-treemap-legend"></div>
     </div>
 
+    <h2 class="section-title">🔐 Verifica tu stesso questo blocco</h2>
+    <p class="small muted">
+      Non fidarti della nostra parola: il tuo browser può ricalcolare da solo se questo blocco è
+      valido, usando solo i dati già scaricati e la funzione crittografica SHA-256 nativa del
+      browser — senza inviare nulla a nessun server. È il principio "don't trust, verify" alla base
+      di Bitcoin.
+    </p>
+    <div class="card">
+      <button type="button" class="btn btn-primary" id="verify-block-btn">🔐 Verifica ora</button>
+      <div id="verify-block-result"></div>
+    </div>
+
+    <div class="card" style="margin-top:0.6rem;">
+      <div class="tip-title small muted" style="margin-bottom:0.5rem;">🔀 Confronto con una seconda fonte indipendente</div>
+      <button type="button" class="btn" id="crosscheck-block-btn">Confronta con blockstream.info</button>
+      <div id="crosscheck-block-result"></div>
+    </div>
+
     <h2 class="section-title">Transazioni in questo blocco</h2>
     <p class="small muted">Ogni riga è una ${termLink("transazione", "transazione")}: mostra gli ${termLink("input", "input")} e gli ${termLink("output", "output")} coinvolti, più la ${termLink("fee", "fee")} pagata ai miner.</p>
     <ul class="tx-list" id="block-tx-list">${txs.map(txRowHtml).join("")}</ul>
@@ -716,6 +813,102 @@ async function renderBlock(param) {
 
   wireBlockTxPagination(hash, block.tx_count, page);
   loadBlockTreemap(hash);
+
+  document.getElementById("verify-block-btn").addEventListener("click", () => verifyBlockClientSide(hash, block));
+  document.getElementById("crosscheck-block-btn").addEventListener("click", () => crossCheckBlockClientSide(hash, block));
+}
+
+const BLOCK_CROSSCHECK_FIELDS = [
+  { key: "id", label: "Hash del blocco" },
+  { key: "merkle_root", label: "Merkle root" },
+  { key: "nonce", label: "Nonce" },
+  { key: "bits", label: "Bits" },
+  { key: "timestamp", label: "Timestamp" },
+  { key: "height", label: "Altezza" },
+  { key: "tx_count", label: "Numero di transazioni" },
+  { key: "previousblockhash", label: "Blocco precedente" },
+];
+
+async function crossCheckClientSide(btnId, resultId, fetchOther, mine, fields, sourceLabel) {
+  const btn = document.getElementById(btnId);
+  const resultEl = document.getElementById(resultId);
+  if (!btn || !resultEl) return;
+  btn.disabled = true;
+  btn.textContent = "Confronto…";
+  resultEl.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+
+  try {
+    const other = await fetchOther();
+    const rows = fields
+      .map((f) => {
+        const match = String(mine[f.key]) === String(other[f.key]);
+        return `<div class="row-top" style="font-size:0.85rem;"><span>${match ? "✅" : "❌"} ${fmt.escapeHtml(f.label)}</span></div>`;
+      })
+      .join("");
+    const allMatch = fields.every((f) => String(mine[f.key]) === String(other[f.key]));
+    resultEl.innerHTML = `
+      <div class="tip-card ${allMatch ? "good" : "bad"}" style="margin-top:1rem;">
+        <div class="tip-title">${allMatch ? "✅ Le due fonti concordano" : "⚠️ Differenze trovate"}</div>
+        <p class="small muted">mempool.space vs ${fmt.escapeHtml(sourceLabel)}, campo per campo:</p>
+        ${rows}
+      </div>`;
+    btn.disabled = false;
+    btn.textContent = `Confronta con ${sourceLabel}`;
+  } catch {
+    resultEl.innerHTML = `<div class="empty-state" style="margin-top:1rem;">Non sono riuscito a contattare ${fmt.escapeHtml(sourceLabel)}. Riprova.</div>`;
+    btn.disabled = false;
+    btn.textContent = "Riprova";
+  }
+}
+
+function crossCheckBlockClientSide(hash, block) {
+  return crossCheckClientSide(
+    "crosscheck-block-btn",
+    "crosscheck-block-result",
+    () => api.crossCheckBlock(hash),
+    block,
+    BLOCK_CROSSCHECK_FIELDS,
+    "blockstream.info"
+  );
+}
+
+async function verifyBlockClientSide(hash, block) {
+  const btn = document.getElementById("verify-block-btn");
+  const resultEl = document.getElementById("verify-block-result");
+  if (!btn || !resultEl) return;
+  btn.disabled = true;
+  btn.textContent = "Verifico…";
+  resultEl.innerHTML = `<div class="loading"><div class="spinner"></div><div>Scarico le transazioni e calcolo SHA-256 nel browser…</div></div>`;
+
+  try {
+    const summary = await api.getBlockSummary(hash);
+    const txids = summary.map((tx) => tx.txid);
+    const result = await verifyBlock(block, txids);
+
+    resultEl.innerHTML = `
+      <div class="tip-card ${result.merkleRootMatches ? "good" : "bad"}" style="margin-top:1rem;">
+        <div class="tip-title">${result.merkleRootMatches ? "✅" : "❌"} ${termLink("Merkle root", "merkleroot")}</div>
+        <p>Ricalcolata dalle ${fmt.formatNumber(txids.length)} transazioni appena scaricate: ${
+      result.merkleRootMatches ? "corrisponde esattamente" : "NON corrisponde"
+    } a quella dichiarata dal blocco.</p>
+      </div>
+      <div class="tip-card ${result.hashMatches ? "good" : "bad"}" style="margin-top:0.6rem;">
+        <div class="tip-title">${result.hashMatches ? "✅" : "❌"} Proof-of-work</div>
+        <p>Ricostruendo l'header (${termLink("nonce", "nonce")}, ${termLink("bits", "bits")}, timestamp, merkle root) e calcolando il doppio SHA-256, il tuo browser ha ottenuto:</p>
+        <p class="mono small" style="word-break:break-all;">${fmt.escapeHtml(result.computedHash)}</p>
+        <p>${
+          result.hashMatches
+            ? "Corrisponde esattamente all'hash del blocco: la proof-of-work è autentica, verificata dal tuo browser."
+            : "NON corrisponde all'hash dichiarato — qualcosa non torna."
+        }</p>
+      </div>`;
+    btn.textContent = "🔐 Verifica ora";
+    btn.disabled = false;
+  } catch {
+    resultEl.innerHTML = `<div class="empty-state" style="margin-top:1rem;">Non sono riuscito a scaricare le transazioni per la verifica. Riprova.</div>`;
+    btn.textContent = "Riprova";
+    btn.disabled = false;
+  }
 }
 
 async function loadBlockTreemap(hash) {
@@ -793,10 +986,41 @@ async function renderBlockTxPage(hash, txCount, page) {
 
 // ---------- Transaction ----------
 
+function txStatusLineHtml(tx, confirmations) {
+  return tx.status.confirmed
+    ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink(confermeLabel(confirmations), "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
+    : `<span class="badge pending">⏳ In attesa in ${termLink("mempool", "mempool")}</span>`;
+}
+
+function startTxTracker(txid) {
+  const el = document.getElementById("tx-status-line");
+  if (!el) return;
+
+  async function poll() {
+    try {
+      const tx = await api.getTx(txid);
+      let confirmations = 0;
+      if (tx.status.confirmed) {
+        const tipHeight = await api.getTipHeight();
+        confirmations = tipHeight - tx.status.block_height + 1;
+      }
+      if (document.getElementById("tx-status-line")) {
+        el.innerHTML = txStatusLineHtml(tx, confirmations);
+      }
+    } catch {
+      // Errore di rete silenzioso: si riprova al prossimo giro senza interrompere il tracker.
+    }
+  }
+
+  const timer = setInterval(poll, 15000);
+  setViewCleanup(() => clearInterval(timer));
+}
+
 async function renderTx(txid) {
   if (!txid) return renderNotFound();
   renderLoading("Carico i dettagli della transazione…");
-  const tx = await api.getTx(txid);
+  const [tx, pricesResult] = await Promise.all([api.getTx(txid), api.getPrices().catch(() => null)]);
+  const eurRate = pricesResult?.EUR ?? null;
   const confirmed = tx.status.confirmed;
 
   let confirmations = 0;
@@ -848,20 +1072,14 @@ async function renderTx(txid) {
     <div class="breadcrumb"><a href="#/">Home</a> / Transazione</div>
     <h1>Transazione</h1>
     <p>${hashWithCopyHtml(tx.txid)}</p>
-    <p>
-      ${
-        confirmed
-          ? `<span class="badge confirmed">✔ Confermata — ${fmt.formatNumber(confirmations)} ${termLink(confermeLabel(confirmations), "conferma")}</span> <a class="small" href="#/block/${tx.status.block_height}">nel blocco #${fmt.formatNumber(tx.status.block_height)}</a>`
-          : `<span class="badge pending">⏳ In attesa in ${termLink("mempool", "mempool")}</span>`
-      }
-    </p>
+    <p id="tx-status-line">${txStatusLineHtml(tx, confirmations)}</p>
 
     <div class="card">
       <p><strong>In parole semplici:</strong>
         ${
           isCoinbase
-            ? `Questa è una transazione speciale: il miner ha creato ${fmt.formatBtc(totalOut)} come ricompensa per aver minato il blocco.`
-            : `Sono stati inviati in totale ${fmt.formatBtc(totalOut)}, prelevando ${fmt.formatBtc(totalIn)} dagli indirizzi mittenti. La differenza, ${fmt.formatBtc(tx.fee)}, è la ${termLink("commissione (fee)", "fee")} pagata ai miner (circa ${feeRate} sat/vB).`
+            ? `Questa è una transazione speciale: il miner ha creato ${fmt.formatBtc(totalOut)}${fmt.formatFiat(totalOut, eurRate) ? ` (~${fmt.formatFiat(totalOut, eurRate)})` : ""} come ricompensa per aver minato il blocco.`
+            : `Sono stati inviati in totale ${fmt.formatBtc(totalOut)}${fmt.formatFiat(totalOut, eurRate) ? ` (~${fmt.formatFiat(totalOut, eurRate)})` : ""}, prelevando ${fmt.formatBtc(totalIn)} dagli indirizzi mittenti. La differenza, ${fmt.formatBtc(tx.fee)}, è la ${termLink("commissione (fee)", "fee")} pagata ai miner (circa ${feeRate} sat/vB).`
         }
       </p>
       <div class="io-columns">
@@ -886,7 +1104,47 @@ async function renderTx(txid) {
         </div>
       </details>
     </div>
+
+    <div class="card">
+      <div class="tip-title small muted" style="margin-bottom:0.5rem;">🔀 Confronto con una seconda fonte indipendente</div>
+      <button type="button" class="btn" id="crosscheck-tx-btn">Confronta con blockstream.info</button>
+      <div id="crosscheck-tx-result"></div>
+    </div>
   `);
+
+  document.getElementById("crosscheck-tx-btn").addEventListener("click", () => crossCheckTxClientSide(tx.txid, tx));
+  startTxTracker(tx.txid);
+}
+
+const TX_CROSSCHECK_FIELDS = [
+  { key: "txid", label: "Txid" },
+  { key: "fee", label: "Fee totale (sat)" },
+  { key: "weight", label: "Peso (weight)" },
+  { key: "size", label: "Dimensione" },
+  { key: "confirmed", label: "Confermata" },
+  { key: "block_height", label: "Altezza del blocco" },
+];
+
+function flattenTxForCrosscheck(tx) {
+  return {
+    txid: tx.txid,
+    fee: tx.fee,
+    weight: tx.weight,
+    size: tx.size,
+    confirmed: tx.status?.confirmed,
+    block_height: tx.status?.block_height,
+  };
+}
+
+function crossCheckTxClientSide(txid, tx) {
+  return crossCheckClientSide(
+    "crosscheck-tx-btn",
+    "crosscheck-tx-result",
+    async () => flattenTxForCrosscheck(await api.crossCheckTx(txid)),
+    flattenTxForCrosscheck(tx),
+    TX_CROSSCHECK_FIELDS,
+    "blockstream.info"
+  );
 }
 
 // ---------- Address ----------
@@ -922,24 +1180,36 @@ function addrTxListHtml(txs, address) {
 async function renderAddress(address) {
   if (!address) return renderNotFound();
   renderLoading("Carico i dettagli dell'indirizzo…");
-  const info = await api.getAddress(address);
-  const txs = await api.getAddressTxs(address);
+  const [info, txs, pricesResult] = await Promise.all([
+    api.getAddress(address),
+    api.getAddressTxs(address),
+    api.getPrices().catch(() => null),
+  ]);
+  const eurRate = pricesResult?.EUR ?? null;
 
   const funded = info.chain_stats.funded_txo_sum + info.mempool_stats.funded_txo_sum;
   const spent = info.chain_stats.spent_txo_sum + info.mempool_stats.spent_txo_sum;
   const balance = funded - spent;
   const txCount = info.chain_stats.tx_count + info.mempool_stats.tx_count;
+  const balanceFiat = fmt.formatFiat(balance, eurRate);
+
+  const watched = isWatched(address);
 
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Indirizzo</div>
     <h1>Indirizzo</h1>
-    <p>${hashWithCopyHtml(address)}</p>
+    <p style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+      ${hashWithCopyHtml(address)}
+      <button type="button" class="btn" id="watch-toggle" data-address="${fmt.escapeHtml(address)}">
+        ${watched ? "★ Salvato — rimuovi" : "☆ Salva questo indirizzo"}
+      </button>
+    </p>
 
     <div class="stat-grid">
       <div class="stat-card">
         <div class="label">Saldo attuale <a class="help-icon" href="#/glossario/utxo" title="Il saldo è la somma degli UTXO non spesi ricevuti da questo indirizzo. Clicca per saperne di più.">?</a></div>
         <div class="value">${fmt.formatBtc(balance)}</div>
-        <div class="sub">${fmt.formatAlt(balance)}</div>
+        <div class="sub">${fmt.formatAlt(balance)}${balanceFiat ? ` · ~${balanceFiat}` : ""}</div>
       </div>
       <div class="stat-card">
         <div class="label">Ricevuto in totale</div>
@@ -984,6 +1254,17 @@ async function renderAddress(address) {
       }
     });
   }
+
+  document.getElementById("watch-toggle").addEventListener("click", (e) => {
+    const btn = e.currentTarget;
+    if (isWatched(address)) {
+      removeFromWatchlist(address);
+      btn.textContent = "☆ Salva questo indirizzo";
+    } else {
+      addToWatchlist(address);
+      btn.textContent = "★ Salvato — rimuovi";
+    }
+  });
 }
 
 // ---------- Glossary ----------
@@ -1019,6 +1300,11 @@ const GLOSSARY_TERMS = [
   { slug: "hashrate", icon: "⚡", term: "Hashrate", desc: "La potenza di calcolo complessiva dedicata dai miner di tutto il mondo a cercare nuovi blocchi, misurata in hash al secondo. Oggi la rete Bitcoin supera i 600 EH/s: centinaia di miliardi di miliardi di hash al secondo. Più è alto, più la rete è sicura e costosa da attaccare." },
   { slug: "halving", icon: "✂️", term: "Halving", desc: "Un evento programmato che ogni 210.000 blocchi (circa 4 anni) dimezza la ricompensa in bitcoin che i miner ricevono per ogni blocco trovato. Regola l'emissione di nuovi bitcoin fino al limite di 21 milioni." },
   { slug: "poolmining", icon: "🤝", term: "Pool di mining", desc: "Un gruppo di miner che unisce la propria potenza di calcolo e divide la ricompensa in proporzione al contributo di ciascuno, per avere entrate più regolari invece di dipendere dalla fortuna di trovare un blocco da soli." },
+  { slug: "segwit", icon: "🧩", term: "SegWit", desc: "Un aggiornamento del 2017 che separa (\"segregated witness\") le firme dal resto della transazione, riducendo lo spazio occupato nel blocco (fee più basse) e correggendo un bug che permetteva di modificare il txid. Gli indirizzi SegWit iniziano con \"3\" o \"bc1q\"." },
+  { slug: "taproot", icon: "🌿", term: "Taproot", desc: "Un aggiornamento del 2021 che rende le transazioni più semplici (multisig e condizioni complesse), più economiche e più private, perché sulla blockchain una spesa normale e una condizione avanzata appaiono identiche. Gli indirizzi Taproot iniziano con \"bc1p\"." },
+  { slug: "psbt", icon: "📋", term: "PSBT", desc: "Partially Signed Bitcoin Transaction: un formato standard per costruire e firmare una transazione in più passaggi separati (es. su un hardware wallet offline), utile soprattutto per i wallet multisig." },
+  { slug: "multisig", icon: "🔏", term: "Multisig", desc: "Un wallet che richiede le firme di più chiavi private (es. 2 su 3) per spendere i fondi, invece di una sola: nessuna singola chiave rubata o persa basta a compromettere i fondi." },
+  { slug: "lightning", icon: "⚡", term: "Lightning Network", desc: "Una rete costruita \"sopra\" Bitcoin per fare pagamenti istantanei ed economici tramite canali privati tra due parti, che si aggiornano fuori dalla blockchain principale e vi si riconciliano solo all'apertura e alla chiusura del canale." },
 ];
 
 function renderGlossary(slug) {
@@ -1315,8 +1601,18 @@ const GUIDES = [
 
       <div class="nav-buttons">
         <a class="btn" href="#/guide/seed-sicura">Guida alla seed sicura →</a>
+        <a class="btn btn-primary" href="#/guide/verifica-indirizzo">🔍 Verifica un indirizzo (strumento) →</a>
       </div>
     `,
+  },
+  {
+    slug: "verifica-indirizzo",
+    icon: "🔍",
+    title: "Verifica un indirizzo prima di inviare",
+    summary: "Controlla il checksum di un indirizzo (legacy, P2SH, SegWit o Taproot) prima di incollarlo in un pagamento.",
+    interactive: true,
+    featured: true,
+    component: "address-checker",
   },
   {
     slug: "fee-e-conferme",
@@ -1403,6 +1699,71 @@ const GUIDES = [
       </div>
     `,
   },
+  {
+    slug: "gestisci-nodo",
+    icon: "🖥️",
+    title: "Gestisci il tuo nodo",
+    summary: "Il passo successivo a un wallet non-custodial: verificare le regole di Bitcoin da solo, senza fidarti di nessun altro.",
+    body: () => `
+      <div class="card">
+        <p>
+          Un ${termLink("wallet", "wallet")} non-custodial ti dà il controllo delle chiavi, ma per sapere
+          "qual è davvero lo stato della blockchain" quasi tutti i wallet si appoggiano al server di
+          qualcun altro — esattamente come fa questo stesso block explorer con mempool.space (lo trovi
+          scritto in fondo a ogni pagina). Il passo successivo, per chi vuole la sovranità completa, è far
+          girare un proprio <strong>nodo Bitcoin</strong>: un programma che scarica e verifica da solo
+          l'intera blockchain, applicando le regole del protocollo senza fidarsi della parola di nessuno —
+          "don't trust, verify".
+        </p>
+      </div>
+
+      <h2 class="section-title">Cosa cambia avendo un tuo nodo</h2>
+      <div class="glossary-grid">
+        <div class="tip-card good">
+          <div class="tip-title">✅ Verifichi tu le regole</div>
+          <p>Il tuo nodo controlla ogni blocco e transazione secondo le regole di consenso: nessuno può
+          convincerti che una transazione non valida o una regola diversa siano accettabili.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">🔒 Privacy migliore</div>
+          <p>Collegando il tuo wallet al tuo nodo, eviti di rivelare i tuoi indirizzi e saldi al server di
+          terzi (come fa invece di default la maggior parte dei wallet).</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">💻 Serve hardware dedicato</div>
+          <p>Un nodo completo scarica l'intera blockchain (centinaia di GB) e resta acceso: la soluzione
+          più comune è un piccolo computer dedicato (es. Raspberry Pi) sempre connesso.</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Da dove iniziare</h2>
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">📦 Bitcoin Core</div>
+          <p>Il software di riferimento, mantenuto dalla community open source: la base su cui è costruita
+          quasi ogni altra implementazione di nodo.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🧰 Distribuzioni "pronte all'uso"</div>
+          <p>Progetti come Umbrel, myNode o RaspiBlitz confezionano Bitcoin Core con un'interfaccia grafica
+          semplice, pensata per chi non vuole usare la riga di comando.</p>
+        </div>
+      </div>
+
+      <div class="warning-box" style="margin-top:1rem;">
+        <p style="margin:0;">
+          <strong>Non è un passo obbligato:</strong> un wallet non-custodial resta comunque tuo (le chiavi
+          sono tue), anche se ti appoggi al nodo di qualcun altro per leggere la blockchain. Far girare un
+          proprio nodo è il livello successivo per chi vuole verificare tutto da sé, non un requisito per
+          usare Bitcoin in sicurezza.
+        </p>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/guide/controllo-fondi">Custodial vs non-custodial →</a>
+      </div>
+    `,
+  },
 ];
 
 function renderGuideIndex() {
@@ -1428,6 +1789,7 @@ function renderGuide(slug) {
   const guide = GUIDES.find((g) => g.slug === slug);
   if (!guide) return renderNotFound();
   if (guide.component === "wallet-chooser") return renderWalletChooser(guide);
+  if (guide.component === "address-checker") return renderAddressChecker(guide);
   if (guide.interactive) return renderDiceGenerator(guide);
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
@@ -1820,6 +2182,72 @@ function renderWalletChooser(guide) {
   });
 
   render();
+}
+
+// ---------- Verifica indirizzo ----------
+
+function renderAddressChecker(guide) {
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
+    <h1>${guide.icon} ${fmt.escapeHtml(guide.title)}</h1>
+    <div class="intro-box">
+      <span class="intro-icon">🔍</span>
+      <div>
+        <p style="margin:0;">
+          Incolla qui un indirizzo prima di usarlo per un pagamento: controlliamo che il suo
+          <em>checksum</em> sia corretto, senza inviare nulla a nessun servizio esterno (il calcolo avviene
+          nel tuo browser). Questo conferma che l'indirizzo è scritto/copiato correttamente — <strong>non</strong>
+          garantisce che appartenga davvero alla persona o al servizio da cui pensi di averlo ricevuto: resta
+          comunque valido il consiglio della guida "${termLink("Phishing", "phishing")}" di verificare sempre
+          da un canale attendibile.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="small muted" for="addr-check-input">Incolla l'indirizzo da controllare</label>
+      <textarea id="addr-check-input" rows="2" class="mono" style="width:100%; margin-top:0.4rem; padding:0.6rem; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--card-bg); color:var(--ink); resize:vertical;" placeholder="bc1q… · bc1p… · 1… · 3…"></textarea>
+      <button type="button" class="btn btn-primary" id="addr-check-btn" style="margin-top:0.6rem;">🔍 Verifica</button>
+      <div id="addr-check-result" style="margin-top:1rem;"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="btn" href="#/guide/truffe-comuni">← Truffe comuni</a>
+      <a class="btn" href="#/guide/privacy-bitcoin">Privacy su Bitcoin →</a>
+    </div>
+  `);
+
+  document.getElementById("addr-check-btn").addEventListener("click", async () => {
+    const raw = document.getElementById("addr-check-input").value;
+    const trimmed = raw.trim();
+    const resultEl = document.getElementById("addr-check-result");
+    resultEl.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+
+    const result = await validateAddress(trimmed);
+
+    let historyHtml = "";
+    if (result.valid) {
+      try {
+        const info = await api.getAddress(trimmed);
+        const txCount = info.chain_stats.tx_count + info.mempool_stats.tx_count;
+        historyHtml =
+          txCount === 0
+            ? `<p class="small muted" style="margin:0.6rem 0 0;">Nessuna transazione trovata: sembra un indirizzo mai usato prima.</p>`
+            : `<p class="small muted" style="margin:0.6rem 0 0;">Ha già ${fmt.formatNumber(txCount)} transazioni. Se è un tuo indirizzo di ricezione, ricorda che riusarlo riduce la privacy (vedi la guida "Privacy su Bitcoin"). <a href="#/address/${encodeURIComponent(trimmed)}">Vedi il dettaglio →</a></p>`;
+      } catch {
+        // Il checksum resta valido anche se non riusciamo a recuperare la cronologia on-chain.
+      }
+    }
+
+    resultEl.innerHTML = `
+      <div class="tip-card ${result.valid ? "good" : "bad"}">
+        <div class="tip-title">${result.valid ? "✅ Checksum valido" : "❌ Checksum NON valido"}${result.type ? ` — ${fmt.escapeHtml(result.type)}` : ""}</div>
+        <p>${fmt.escapeHtml(result.reason)}</p>
+        ${trimmed ? `<p class="mono small" style="word-break:break-all; margin:0.5rem 0 0;">${fmt.escapeHtml(chunkAddress(trimmed))}</p>` : ""}
+      </div>
+      ${historyHtml}
+    `;
+  });
 }
 
 // ---------- Wiring ----------
