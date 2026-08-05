@@ -61,9 +61,11 @@ Funzionalità principali:
   appartenga a chi pensi: lo strumento lo ricorda esplicitamente.
 - **Quanto costa inviare bitcoin adesso?** (in home): le fee consigliate del momento tradotte in sat e in
   euro (se il cambio è disponibile) per tre velocità diverse, su una transazione tipo.
-- **Glossario** (`#/glossario`) con oltre 20 termini di Bitcoin spiegati in italiano semplice. Ogni
-  parola tecnica che compare nell'app (hash, fee, conferme, input/output, nonce, difficoltà, ecc.) è
-  un link sottolineato che porta dritto alla voce corrispondente del glossario, evidenziata al volo.
+- **Glossario** (`#/glossario`) con oltre 100 termini di Bitcoin spiegati in italiano semplice — dai
+  fondamentali (blocco, fee, conferme) a protocollo e rete, indirizzi e chiavi, privacy e sicurezza,
+  Lightning Network, crittografia di base e cultura Bitcoin — con una barra di ricerca che filtra la
+  lista in tempo reale mentre scrivi. Ogni parola tecnica che compare nell'app è un link sottolineato
+  che porta dritto alla voce corrispondente, evidenziata al volo.
 - **Pulsanti "copia"** su hash, txid e indirizzi, per non dover selezionare a mano testi lunghi.
 - **Grafica "liquid glass"**: pannelli traslucidi con effetto vetro smerigliato, sfondo a gradiente
   soffuso, forme arrotondate e tema chiaro/scuro automatico in base alle preferenze di sistema.

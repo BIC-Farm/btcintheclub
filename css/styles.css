@@ -183,8 +183,9 @@ a:hover {
   pointer-events: none;
   font-size: 0.9rem;
 }
-.search-form input {
+.search-input-wrap input {
   flex: 1;
+  min-width: 0;
   padding: 0.6rem 0.9rem 0.6rem 2.3rem;
   border: none;
   border-radius: var(--pill);
@@ -192,11 +193,15 @@ a:hover {
   color: var(--ink);
   font-size: 0.9rem;
 }
-.search-form input::placeholder {
+.search-input-wrap input::placeholder {
   color: var(--ink-soft);
 }
-.search-form input:focus {
+.search-input-wrap input:focus {
   outline: none;
+}
+.glossary-search-wrap {
+  max-width: 420px;
+  margin-bottom: 0.5rem;
 }
 .search-form button {
   padding: 0.6rem 1.25rem;
