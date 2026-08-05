@@ -121,6 +121,10 @@ async function router() {
         return await renderAllBlocks();
       case "mining":
         return await renderMining();
+      case "blockclock":
+        return await renderBlockClockPage();
+      case "novita":
+        return renderChangelog();
       case "search":
         return await renderSearch(parts[1]);
       default:
@@ -260,6 +264,7 @@ async function renderHome() {
       <div class="block-clock-info">
         <p class="block-clock-title">⏱️ Block Clock <a class="help-icon" href="#/glossario/tempoblocco" title="I tempi tra un blocco e l'altro variano molto per pura casualità: è normale. Clicca per saperne di più.">?</a></p>
         <p class="small muted" id="block-clock-note">Tempo trascorso dall'ultimo blocco trovato.</p>
+        <p class="small" style="margin-top:0.4rem;"><a class="term-link" href="#/blockclock">⛶ Modalità schermo intero →</a></p>
       </div>
     </div>
 
@@ -327,19 +332,19 @@ function describeBlockClockElapsed(elapsed) {
   return "Il prossimo blocco può arrivare da un momento all'altro — i tempi variano molto, è normale.";
 }
 
-function startBlockClock(initialHeight, initialTimestamp) {
+function startBlockClock(initialHeight, initialTimestamp, idPrefix = "block-clock") {
   const circumference = 2 * Math.PI * 52;
   let height = initialHeight;
   let blockTime = initialTimestamp;
   let celebrateUntil = 0;
 
-  const card = document.getElementById("block-clock-card");
-  const ring = document.getElementById("block-clock-progress");
-  const dot = document.getElementById("block-clock-dot");
-  const ping = document.getElementById("block-clock-ping");
-  const heightEl = document.getElementById("block-clock-height");
-  const elapsedEl = document.getElementById("block-clock-elapsed");
-  const noteEl = document.getElementById("block-clock-note");
+  const card = document.getElementById(`${idPrefix}-card`);
+  const ring = document.getElementById(`${idPrefix}-progress`);
+  const dot = document.getElementById(`${idPrefix}-dot`);
+  const ping = document.getElementById(`${idPrefix}-ping`);
+  const heightEl = document.getElementById(`${idPrefix}-height`);
+  const elapsedEl = document.getElementById(`${idPrefix}-elapsed`);
+  const noteEl = document.getElementById(`${idPrefix}-note`);
   if (!card || !ring || !dot || !ping || !heightEl || !elapsedEl || !noteEl) return;
 
   function tick() {
@@ -398,7 +403,59 @@ function startBlockClock(initialHeight, initialTimestamp) {
   setViewCleanup(() => {
     clearInterval(tickTimer);
     clearInterval(pollTimer);
+    document.body.classList.remove("kiosk-mode");
   });
+}
+
+async function renderBlockClockPage() {
+  renderLoading("Carico il Block Clock…");
+  const tipHeight = await api.getTipHeight();
+  const hash = await api.getBlockHeightHash(tipHeight);
+  const block = await api.getBlock(hash);
+
+  document.body.classList.add("kiosk-mode");
+
+  setContent(`
+    <div class="blockclock-page">
+      <div class="blockclock-page-controls">
+        <a class="btn" href="#/">← Home</a>
+        <button type="button" class="btn" id="bc-fullscreen-btn">⛶ Schermo intero</button>
+      </div>
+      <div class="blockclock-page-center">
+        <div class="block-clock-card" id="bc-page-card">
+          <div class="block-clock block-clock-xl">
+            <div class="block-clock-ping" id="bc-page-ping"></div>
+            <svg class="block-clock-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="block-clock-track" cx="60" cy="60" r="52"></circle>
+              <circle class="block-clock-progress" id="bc-page-progress" cx="60" cy="60" r="52"
+                stroke-dasharray="${2 * Math.PI * 52}" stroke-dashoffset="${2 * Math.PI * 52}"></circle>
+              <circle class="block-clock-dot" id="bc-page-dot" cx="112" cy="60" r="4"></circle>
+            </svg>
+            <div class="block-clock-center">
+              <div class="block-clock-height" id="bc-page-height">#${fmt.formatNumber(block.height)}</div>
+              <div class="block-clock-elapsed" id="bc-page-elapsed">00:00</div>
+            </div>
+          </div>
+        </div>
+        <p class="small muted" id="bc-page-note" style="max-width:32rem;">Tempo trascorso dall'ultimo blocco trovato.</p>
+        <p class="small muted" style="max-width:32rem;">
+          Pensato per restare aperto su uno schermo, come display sempre acceso: si aggiorna da solo, non
+          serve mai ricaricare la pagina. Premi "Schermo intero" per nascondere anche la barra del browser.
+        </p>
+      </div>
+    </div>
+  `);
+
+  const fsBtn = document.getElementById("bc-fullscreen-btn");
+  fsBtn.addEventListener("click", () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.();
+    }
+  });
+
+  startBlockClock(block.height, block.timestamp, "bc-page");
 }
 
 // ---------- Blocchi (elenco completo) ----------
@@ -529,16 +586,113 @@ function difficultyBodyHtml(d) {
     </p>`;
 }
 
-function hashrateBodyHtml(h) {
-  if (!h || !Number.isFinite(h.currentHashrate)) return null;
+const HASHRATE_PERIODS = [
+  { key: "1m", label: "1 mese" },
+  { key: "3m", label: "3 mesi" },
+  { key: "1y", label: "1 anno" },
+  { key: "3y", label: "3 anni" },
+];
+const HASHRATE_CHART_W = 600;
+const HASHRATE_CHART_H = 160;
+
+function chartScales(points, width, height, padY = 0.08) {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const spanY = maxY - minY || maxY || 1;
+  const yLo = minY - spanY * padY;
+  const yHi = maxY + spanY * padY;
+  const scaleX = (x) => ((x - minX) / (maxX - minX || 1)) * width;
+  const scaleY = (y) => height - ((y - yLo) / (yHi - yLo || 1)) * height;
+  return { minY, maxY, scaleX, scaleY };
+}
+
+function lineChartSvgHtml(wrapId, points, width = HASHRATE_CHART_W, height = HASHRATE_CHART_H) {
+  if (!Array.isArray(points) || points.length < 2) {
+    return `<p class="small muted" style="margin-top:0.75rem;">Dati storici insufficienti per il grafico in questo periodo.</p>`;
+  }
+  const { minY, maxY, scaleX, scaleY } = chartScales(points, width, height);
+  const linePts = points.map((p) => `${scaleX(p.x).toFixed(1)},${scaleY(p.y).toFixed(1)}`).join(" ");
+  const areaPts = `0,${height} ${linePts} ${width},${height}`;
   return `
-    <div class="tip-title">⚡ Potenza di calcolo della rete (${termLink("hashrate", "hashrate")})</div>
-    <div class="block-clock-height" style="font-size:1.8rem;">${fmt.escapeHtml(fmt.formatHashrate(h.currentHashrate))}</div>
+    <div class="chart-wrap" id="${wrapId}" data-width="${width}" data-height="${height}">
+      <div class="chart-axis-label chart-axis-max">${fmt.escapeHtml(fmt.formatHashrate(maxY))}</div>
+      <div class="chart-axis-label chart-axis-min">${fmt.escapeHtml(fmt.formatHashrate(minY))}</div>
+      <svg class="chart-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <polygon class="chart-area" points="${areaPts}"></polygon>
+        <polyline class="chart-line" points="${linePts}"></polyline>
+        <line class="chart-guide" x1="0" y1="0" x2="0" y2="${height}"></line>
+        <circle class="chart-dot" r="4" cx="0" cy="0"></circle>
+      </svg>
+      <div class="chart-tooltip"></div>
+    </div>`;
+}
+
+function wireLineChartHover(wrapId, points, { formatX, formatY } = {}) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap || !Array.isArray(points) || points.length < 2) return;
+  const svg = wrap.querySelector(".chart-svg");
+  const guide = wrap.querySelector(".chart-guide");
+  const dot = wrap.querySelector(".chart-dot");
+  const tooltip = wrap.querySelector(".chart-tooltip");
+  if (!svg || !guide || !dot || !tooltip) return;
+  const width = Number(wrap.dataset.width);
+  const height = Number(wrap.dataset.height);
+  const { scaleX, scaleY } = chartScales(points, width, height);
+
+  function showAt(clientX) {
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const relX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const idx = Math.round(relX * (points.length - 1));
+    const p = points[idx];
+    if (!p) return;
+    const x = scaleX(p.x);
+    const y = scaleY(p.y);
+    guide.setAttribute("x1", String(x));
+    guide.setAttribute("x2", String(x));
+    guide.style.opacity = "1";
+    dot.setAttribute("cx", String(x));
+    dot.setAttribute("cy", String(y));
+    dot.style.opacity = "1";
+    tooltip.innerHTML = `<strong>${fmt.escapeHtml(formatY ? formatY(p.y) : String(p.y))}</strong><br><span class="muted">${fmt.escapeHtml(formatX ? formatX(p.x) : String(p.x))}</span>`;
+    tooltip.style.left = `${Math.min(88, Math.max(2, (x / width) * 100))}%`;
+    tooltip.style.opacity = "1";
+  }
+  function hide() {
+    guide.style.opacity = "0";
+    dot.style.opacity = "0";
+    tooltip.style.opacity = "0";
+  }
+  svg.addEventListener("pointerdown", (e) => showAt(e.clientX));
+  svg.addEventListener("pointermove", (e) => showAt(e.clientX));
+  svg.addEventListener("pointerleave", hide);
+  svg.addEventListener("pointerup", hide);
+}
+
+function hashrateBodyHtml(h, activePeriod) {
+  if (!h || !Number.isFinite(h.currentHashrate)) return null;
+  const points = Array.isArray(h.hashrates) ? h.hashrates.map((d) => ({ x: d.timestamp, y: d.avgHashrate })) : [];
+  const periodButtons = HASHRATE_PERIODS.map(
+    (p) => `<button type="button" class="unit-btn${p.key === activePeriod ? " active" : ""}" data-period="${p.key}">${fmt.escapeHtml(p.label)}</button>`
+  ).join("");
+  return `
+    <div class="row-top" style="align-items:flex-start; flex-wrap:wrap;">
+      <div>
+        <div class="tip-title">⚡ Potenza di calcolo della rete (${termLink("hashrate", "hashrate")})</div>
+        <div class="block-clock-height" style="font-size:1.8rem;">${fmt.escapeHtml(fmt.formatHashrate(h.currentHashrate))}</div>
+      </div>
+      <div class="unit-toggle" id="hashrate-period-toggle" role="group" aria-label="Periodo del grafico">${periodButtons}</div>
+    </div>
+    ${lineChartSvgHtml("hashrate-chart-wrap", points)}
     <p class="small muted" style="margin:0.5rem 0 0;">
-      Somma stimata della potenza di calcolo di tutti i miner del mondo. Più è alta, più costa (in
-      elettricità e hardware) provare a riorganizzare blocchi recenti o censurare transazioni — un
-      attacco che comunque non permetterebbe a nessuno di rubare fondi da wallet altrui o creare
-      bitcoin dal nulla.
+      Somma stimata della potenza di calcolo di tutti i miner del mondo, nel periodo scelto sopra (passa
+      il mouse o il dito sul grafico per i dettagli). Più è alta, più costa (in elettricità e hardware)
+      provare a riorganizzare blocchi recenti o censurare transazioni — un attacco che comunque non
+      permetterebbe a nessuno di rubare fondi da wallet altrui o creare bitcoin dal nulla.
     </p>`;
 }
 
@@ -615,7 +769,7 @@ async function renderMining() {
       stato della rete in tempo reale.
     </p>
     <div class="glossary-grid" id="mining-grid">
-      ${miningCardShellHtml("mining-hashrate")}
+      ${miningCardShellHtml("mining-hashrate", "grid-column:1 / -1;")}
       <div class="card" id="mining-halving">${halvingBodyHtml(tipHeight)}</div>
       ${miningCardShellHtml("mining-difficulty")}
       ${miningCardShellHtml("mining-pools", "grid-column:1 / -1;")}
@@ -624,6 +778,7 @@ async function renderMining() {
 
   const grid = document.getElementById("mining-grid");
   let lastHeight = tipHeight;
+  let hashratePeriod = "3m";
 
   async function pollTipHeight() {
     try {
@@ -641,8 +796,33 @@ async function renderMining() {
   const pollTimer = setInterval(pollTipHeight, 30000);
   setViewCleanup(() => clearInterval(pollTimer));
 
+  async function loadHashrateCard(period) {
+    hashratePeriod = period;
+    const el = document.getElementById("mining-hashrate");
+    if (!el) return;
+    el.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+    try {
+      const h = await api.getMiningHashrate(period);
+      if (!el.isConnected) return;
+      const html = hashrateBodyHtml(h, period);
+      if (html == null) throw new Error("dati hashrate non validi");
+      el.innerHTML = html;
+      const points = Array.isArray(h.hashrates) ? h.hashrates.map((d) => ({ x: d.timestamp, y: d.avgHashrate })) : [];
+      wireLineChartHover("hashrate-chart-wrap", points, {
+        formatY: (v) => fmt.formatHashrate(v),
+        formatX: (t) => fmt.formatDateOnly(t),
+      });
+      document.getElementById("hashrate-period-toggle")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-period]");
+        if (btn) loadHashrateCard(btn.dataset.period);
+      });
+    } catch {
+      if (el.isConnected) el.innerHTML = miningErrorHtml("mining-hashrate", "Dati sull'hashrate non disponibili al momento.");
+    }
+  }
+
   function loadAll() {
-    loadMiningCard("mining-hashrate", () => api.getMiningHashrate("3d"), hashrateBodyHtml, "Dati sull'hashrate non disponibili al momento.");
+    loadHashrateCard(hashratePeriod);
     loadMiningCard("mining-difficulty", () => api.getDifficultyAdjustment(), difficultyBodyHtml, "Dati sulla difficoltà non disponibili al momento.");
     loadMiningCard("mining-pools", () => api.getMiningPools("1w"), poolsBodyHtml, "Dati sui pool di mining non disponibili al momento.");
   }
@@ -651,7 +831,7 @@ async function renderMining() {
     const btn = e.target.closest("button[data-retry]");
     if (!btn) return;
     const id = btn.dataset.retry;
-    if (id === "mining-hashrate") loadMiningCard(id, () => api.getMiningHashrate("3d"), hashrateBodyHtml, "Dati sull'hashrate non disponibili al momento.");
+    if (id === "mining-hashrate") loadHashrateCard(hashratePeriod);
     if (id === "mining-difficulty") loadMiningCard(id, () => api.getDifficultyAdjustment(), difficultyBodyHtml, "Dati sulla difficoltà non disponibili al momento.");
     if (id === "mining-pools") loadMiningCard(id, () => api.getMiningPools("1w"), poolsBodyHtml, "Dati sui pool di mining non disponibili al momento.");
   });
@@ -2461,6 +2641,92 @@ function renderAddressChecker(guide) {
       ${historyHtml}
     `;
   });
+}
+
+// ---------- Novità (changelog) ----------
+
+const CHANGELOG = [
+  {
+    version: "Novità",
+    date: "5 agosto 2026",
+    items: [
+      `Nuova sezione "Novità" (questa pagina!) per vedere cosa cambia a ogni aggiornamento del sito.`,
+      "Grafico storico dell'hashrate nella pagina Mining, con periodi selezionabili (1 mese / 3 mesi / 1 anno / 3 anni) e dettagli al passaggio del mouse o del dito.",
+      "Il Block Clock in home ora si può aprire a schermo intero (#/blockclock): pensato per restare acceso su un monitor dedicato, come display sempre visibile.",
+      `Nuova guida "Primi passi con Bitcoin: la tua roadmap", per chi ha appena comprato i suoi primi bitcoin e non sa da dove cominciare.`,
+    ],
+  },
+  {
+    version: "Glossario esteso",
+    date: "5 agosto 2026",
+    items: [
+      "Il glossario passa da circa 30 a 116 termini: rete e protocollo, indirizzi e chiavi, privacy e sicurezza, Lightning Network, crittografia di base e cultura Bitcoin.",
+      "Aggiunta una barra di ricerca che filtra i termini in tempo reale mentre scrivi.",
+    ],
+  },
+  {
+    version: "Leggibilità dell'interfaccia",
+    date: "5 agosto 2026",
+    items: [
+      `Corretta la spaziatura tra le sezioni di ogni pagina: alcuni blocchi (liste, card) restavano "schiacciati" contro il successivo.`,
+    ],
+  },
+  {
+    version: "10 nuove funzionalità dalla community",
+    date: "3 agosto 2026",
+    items: [
+      "Tracker live delle conferme sulla pagina transazione, aggiornato ogni 15 secondi senza mai ricaricare.",
+      "Importi anche in EUR (oltre a BTC/sats) su saldo indirizzo e importi transazione.",
+      `Calcolatore "quanto costa inviare bitcoin adesso" in home, in sat e in euro.`,
+      "Watchlist di indirizzi salvati in locale (nel browser), con saldo live in home.",
+      "Strumento di verifica indirizzo (checksum base58check e bech32/bech32m calcolato nel browser) prima di inviare un pagamento.",
+      "Verifica client-side del blocco: ricalcolo nel browser di merkle root e proof-of-work, senza fidarsi della parola del servizio dati.",
+      "Confronto con una seconda fonte indipendente (blockstream.info) su blocco e transazione, campo per campo.",
+      "Banner di trasparenza permanente sul fatto che il sito è client di un'unica fonte terza.",
+      `Nuova guida "Gestisci il tuo nodo" e countdown live al prossimo halving nella pagina Mining.`,
+      "Glossario ampliato con SegWit, Taproot, PSBT, Multisig e Lightning Network.",
+    ],
+  },
+  {
+    version: "Pagina Mining",
+    date: "3 agosto 2026",
+    items: [
+      "Nuova pagina Mining (#/mining) con hashrate, countdown al prossimo aggiustamento della difficoltà e pool di mining più attivi, tutto in tempo reale.",
+    ],
+  },
+  {
+    version: "Lancio del block explorer",
+    date: null,
+    items: [
+      "Ricerca unica per blocco, transazione o indirizzo.",
+      "Home con ultimi blocchi minati, mempool e fee consigliate, e Block Clock live.",
+      "Dettaglio blocco, transazione e indirizzo con spiegazioni in parole semplici.",
+      "Composizione visiva del blocco: mappa a mosaico delle transazioni.",
+      "Glossario e guide per chi inizia, toggle BTC/sats, tema chiaro/scuro automatico.",
+    ],
+  },
+];
+
+function renderChangelog() {
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / Novità</div>
+    <h1>🆕 Novità</h1>
+    <p class="muted">Cosa è cambiato nel block explorer, versione dopo versione.</p>
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+      ${CHANGELOG.map(
+        (rel, i) => `
+        <div class="card">
+          <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
+            <span class="tip-title" style="margin-bottom:0;">${i === 0 ? "🆕 " : ""}${fmt.escapeHtml(rel.version)}</span>
+            ${rel.date ? `<span class="small muted">${fmt.escapeHtml(rel.date)}</span>` : ""}
+          </div>
+          <ul style="margin:0.6rem 0 0; padding-left:1.2rem; display:flex; flex-direction:column; gap:0.4rem;">
+            ${rel.items.map((item) => `<li class="small">${fmt.escapeHtml(item)}</li>`).join("")}
+          </ul>
+        </div>`
+      ).join("")}
+    </div>
+  `);
 }
 
 // ---------- Wiring ----------
