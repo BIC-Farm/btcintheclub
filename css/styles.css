@@ -1150,6 +1150,16 @@ details.tech-details summary:hover {
   margin-bottom: 0.5rem;
 }
 
+/*
+ * Ritmo verticale uniforme tra le sezioni di ogni pagina. Ogni vista aggiunge il proprio contenuto
+ * come figli diretti di .app (card, liste, titoli, wrapper): senza questa regola alcuni di essi
+ * (es. .block-list con margin:0) restano attaccati al componente successivo. Va dopo le regole dei
+ * singoli componenti nel file per vincere a parità di specificità su quelle che azzerano il margine.
+ */
+.app > * + * {
+  margin-top: 1.25rem;
+}
+
 @media (max-width: 600px) {
   .header-inner {
     flex-direction: column;
