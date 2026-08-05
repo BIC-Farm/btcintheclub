@@ -713,41 +713,85 @@ function halvingBodyHtml(height) {
     </p>`;
 }
 
+const POOL_TOP_N = 15;
+const POOL_PERIODS = [
+  { key: "24h", label: "24h" },
+  { key: "3d", label: "3 giorni" },
+  { key: "1w", label: "1 settimana" },
+  { key: "1m", label: "1 mese" },
+];
+const POOL_COLORS = [
+  "#f7931a", "#3b82f6", "#22c55e", "#a855f7", "#ef4444",
+  "#14b8a6", "#eab308", "#ec4899", "#6366f1", "#f97316",
+  "#10b981", "#8b5cf6", "#f43f5e", "#0ea5e9", "#84cc16",
+];
+
 function normalizeMiningPools(raw) {
   const list = Array.isArray(raw) ? raw : Array.isArray(raw?.pools) ? raw.pools : [];
   const total = typeof raw?.blockCount === "number" ? raw.blockCount : list.reduce((s, p) => s + (p.blockCount ?? p.count ?? 0), 0);
   const sorted = list
-    .map((p) => ({ name: p.name || p.poolName || "Sconosciuto", blocks: p.blockCount ?? p.count ?? 0 }))
+    .map((p) => ({
+      name: p.name || p.poolName || "Sconosciuto",
+      blocks: p.blockCount ?? p.count ?? 0,
+      avgMatchRate: typeof p.avgMatchRate === "number" ? p.avgMatchRate : null,
+    }))
     .filter((p) => p.blocks > 0)
     .sort((a, b) => b.blocks - a.blocks);
-  const top = sorted.slice(0, 6).map((p) => ({ ...p, pct: total > 0 ? (p.blocks / total) * 100 : 0 }));
+  const top = sorted.slice(0, POOL_TOP_N).map((p) => ({ ...p, pct: total > 0 ? (p.blocks / total) * 100 : 0 }));
   const shownBlocks = top.reduce((s, p) => s + p.blocks, 0);
   const otherPct = total > 0 ? Math.max(0, ((total - shownBlocks) / total) * 100) : 0;
   return { top, otherPct };
 }
 
-function poolsBodyHtml(raw) {
+function poolStackBarHtml(top, otherPct) {
+  const segments = top
+    .map(
+      (p, i) =>
+        `<span style="width:${p.pct}%; background:${POOL_COLORS[i % POOL_COLORS.length]};" title="${fmt.escapeHtml(p.name)}: ${p.pct.toFixed(1)}%"></span>`
+    )
+    .join("");
+  const otherSeg =
+    otherPct > 0.5 ? `<span style="width:${otherPct}%; background:var(--hairline);" title="Altri pool minori: ${otherPct.toFixed(1)}%"></span>` : "";
+  return `<div class="stack-bar">${segments}${otherSeg}</div>`;
+}
+
+const POOL_PERIOD_LABELS = { "24h": "nelle ultime 24 ore", "3d": "negli ultimi 3 giorni", "1w": "nell'ultima settimana", "1m": "nell'ultimo mese" };
+
+function poolsBodyHtml(raw, activePeriod) {
   const { top, otherPct } = normalizeMiningPools(raw);
   if (top.length === 0) return null;
+  const periodButtons = POOL_PERIODS.map(
+    (p) => `<button type="button" class="unit-btn${p.key === activePeriod ? " active" : ""}" data-pool-period="${p.key}">${fmt.escapeHtml(p.label)}</button>`
+  ).join("");
   const rows = otherPct > 0.5 ? [...top, { name: "Altri pool minori / non identificati", blocks: null, pct: otherPct, muted: true }] : top;
   return `
-    <div class="tip-title">🤝 ${termLink("Pool di mining", "poolmining")} più attivi (ultima settimana)</div>
-    <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:0.5rem;">
+    <div class="row-top" style="align-items:flex-start; flex-wrap:wrap;">
+      <div class="tip-title" style="margin-bottom:0;">🤝 ${termLink("Pool di mining", "poolmining")} più attivi</div>
+      <div class="unit-toggle" id="pools-period-toggle" role="group" aria-label="Periodo dei pool">${periodButtons}</div>
+    </div>
+    ${poolStackBarHtml(top, otherPct)}
+    <div style="display:flex; flex-direction:column; gap:0.55rem; margin-top:0.9rem;">
       ${rows
         .map(
-          (p) => `
+          (p, i) => `
         <div${p.muted ? ` class="muted"` : ""}>
-          <div class="row-top" style="font-weight:600; font-size:0.85rem;">
-            <span>${fmt.escapeHtml(p.name)}</span>
-            <span class="muted">${p.pct.toFixed(1)}%</span>
+          <div class="row-top" style="font-weight:600; font-size:0.85rem; gap:0.5rem;">
+            <span>${
+              p.muted ? "" : `<span class="legend-swatch" style="background:${POOL_COLORS[i % POOL_COLORS.length]}; margin-right:0.4rem;"></span>`
+            }${fmt.escapeHtml(p.name)}${
+              typeof p.avgMatchRate === "number"
+                ? ` <span class="small muted" title="Stima di quanto il template dei blocchi trovati da questo pool segue l'ordine di fee ottimale: non è una misura di sicurezza né di affidabilità del pool.">· ${p.avgMatchRate.toFixed(1)}% efficienza fee</span>`
+                : ""
+            }</span>
+            <span class="muted">${p.pct.toFixed(1)}%${typeof p.blocks === "number" ? ` (${fmt.formatNumber(p.blocks)} blocchi)` : ""}</span>
           </div>
-          <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${p.pct}%"></div></div>
+          <div class="dice-progress-bar"><div class="dice-progress-fill" style="width:${p.pct}%; background:${p.muted ? "var(--ink-soft)" : POOL_COLORS[i % POOL_COLORS.length]};"></div></div>
         </div>`
         )
         .join("")}
     </div>
     <p class="small muted" style="margin:0.75rem 0 0;">
-      La quota riflette quali miner condividono la potenza con quel pool <em>in questo momento</em>: un
+      La quota riflette quali miner condividono la potenza con quel pool ${fmt.escapeHtml(POOL_PERIOD_LABELS[activePeriod] ?? "nel periodo scelto sopra")}: un
       miner può cambiare pool in pochi minuti, quindi non è una proprietà fissa. I nomi sono
       un'etichetta rilevata da mempool.space (tag nella coinbase o indirizzo di payout noto), non un
       dato verificabile crittograficamente. In ogni caso, nessun pool — per quanto grande — può da solo
@@ -779,6 +823,7 @@ async function renderMining() {
   const grid = document.getElementById("mining-grid");
   let lastHeight = tipHeight;
   let hashratePeriod = "3m";
+  let poolsPeriod = "1w";
 
   async function pollTipHeight() {
     try {
@@ -821,10 +866,30 @@ async function renderMining() {
     }
   }
 
+  async function loadPoolsCard(period) {
+    poolsPeriod = period;
+    const el = document.getElementById("mining-pools");
+    if (!el) return;
+    el.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+    try {
+      const raw = await api.getMiningPools(period);
+      if (!el.isConnected) return;
+      const html = poolsBodyHtml(raw, period);
+      if (html == null) throw new Error("dati pool non validi");
+      el.innerHTML = html;
+      document.getElementById("pools-period-toggle")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-pool-period]");
+        if (btn) loadPoolsCard(btn.dataset.poolPeriod);
+      });
+    } catch {
+      if (el.isConnected) el.innerHTML = miningErrorHtml("mining-pools", "Dati sui pool di mining non disponibili al momento.");
+    }
+  }
+
   function loadAll() {
     loadHashrateCard(hashratePeriod);
     loadMiningCard("mining-difficulty", () => api.getDifficultyAdjustment(), difficultyBodyHtml, "Dati sulla difficoltà non disponibili al momento.");
-    loadMiningCard("mining-pools", () => api.getMiningPools("1w"), poolsBodyHtml, "Dati sui pool di mining non disponibili al momento.");
+    loadPoolsCard(poolsPeriod);
   }
 
   grid.addEventListener("click", (e) => {
@@ -833,7 +898,7 @@ async function renderMining() {
     const id = btn.dataset.retry;
     if (id === "mining-hashrate") loadHashrateCard(hashratePeriod);
     if (id === "mining-difficulty") loadMiningCard(id, () => api.getDifficultyAdjustment(), difficultyBodyHtml, "Dati sulla difficoltà non disponibili al momento.");
-    if (id === "mining-pools") loadMiningCard(id, () => api.getMiningPools("1w"), poolsBodyHtml, "Dati sui pool di mining non disponibili al momento.");
+    if (id === "mining-pools") loadPoolsCard(poolsPeriod);
   });
 
   loadAll();

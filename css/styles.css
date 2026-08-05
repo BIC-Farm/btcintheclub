@@ -677,6 +677,22 @@ body.kiosk-mode .app {
   bottom: -0.2rem;
 }
 
+.stack-bar {
+  display: flex;
+  height: 0.9rem;
+  border-radius: var(--pill);
+  overflow: hidden;
+  background: var(--hairline);
+  margin-top: 0.75rem;
+}
+.stack-bar span {
+  height: 100%;
+  transition: opacity 0.15s ease;
+}
+.stack-bar span:hover {
+  opacity: 0.8;
+}
+
 .help-icon {
   display: inline-flex;
   align-items: center;

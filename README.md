@@ -33,12 +33,15 @@ Funzionalità principali:
   dito che mostra valore e data di ogni punto, countdown al prossimo aggiustamento della difficoltà, e un
   **countdown live al prossimo halving** (barra di progresso sull'epoca corrente, blocchi rimanenti,
   ricompensa attuale/futura nell'unità scelta BTC o sats) che si aggiorna da solo non appena arriva un
-  nuovo blocco, senza ricaricare la pagina. Include anche i pool di mining più attivi dell'ultima settimana
-  con relativa percentuale di blocchi trovati. Ogni sezione si carica in modo indipendente e ha un proprio
-  pulsante "Riprova" se i dati non arrivano, così un problema su una singola fonte non blocca tutta la
-  pagina. La card dei pool ricorda esplicitamente che le quote sono etichette rilevate da mempool.space
-  (non un dato verificabile crittograficamente), che i miner possono cambiare pool in pochi minuti, e che
-  nessun pool può da solo cambiare le regole del protocollo.
+  nuovo blocco, senza ricaricare la pagina. Include anche i **pool di mining più attivi**, fino a 15 pool
+  (in linea con la profondità mostrata su mempool.space/mining, non solo i primi 6) con periodo selezionabile
+  (24h / 3 giorni / 1 settimana / 1 mese), una barra impilata colorata che mostra a colpo d'occhio la
+  distribuzione tra pool, e la relativa percentuale ed efficienza nella selezione delle fee (quando il dato
+  è disponibile) per ciascuno. Ogni sezione si carica in modo indipendente e ha un proprio pulsante "Riprova"
+  se i dati non arrivano, così un problema su una singola fonte non blocca tutta la pagina. La card dei pool
+  ricorda esplicitamente che le quote sono etichette rilevate da mempool.space (non un dato verificabile
+  crittograficamente), che i miner possono cambiare pool in pochi minuti, e che nessun pool può da solo
+  cambiare le regole del protocollo.
 - **Dettaglio blocco**: informazioni principali in evidenza, dettagli tecnici avanzati (nonce, difficoltà,
   merkle root, ecc.) nascosti dietro un pannello a scomparsa, elenco transazioni con paginazione, e una
   **mappa visiva della composizione del blocco**: un mosaico di rettangoli (uno per transazione, dati reali
