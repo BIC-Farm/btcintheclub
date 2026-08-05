@@ -72,6 +72,12 @@ Funzionalità principali:
 - **Guide** (`#/guide`) con approfondimenti pratici per chi inizia: come proteggere la seed phrase,
   custodial vs non-custodial, come scegliere il primo wallet, le truffe Bitcoin più comuni, come funzionano
   fee e conferme, e le basi della privacy su Bitcoin.
+- **Primi passi con Bitcoin: la tua roadmap** (`#/guide/primi-passi`, in cima alla sezione Guide con badge
+  "🚀 Inizia qui", e linkata anche in home): la guida pensata per chi ha appena comprato i suoi primi
+  bitcoin e non sa da dove cominciare. Non insegna nulla di nuovo, ma mette in ordine consigliato le guide
+  già esistenti — dal capire dove sono i propri fondi oggi, alla scelta del wallet, alla protezione della
+  seed, al primo trasferimento con calma, fino a truffe da riconoscere e passi più avanzati (privacy, nodo
+  proprio) da affrontare quando si è pronti.
 - **Toggle BTC / sats** in header: cambia l'unità di visualizzazione di tutti gli importi con un click,
   preferenza salvata in locale così resta impostata anche ai visite successive.
 - **Genera una seed con i dadi** (`#/guide/dadi-seed`, dentro la sezione Guide): demo didattica che mostra

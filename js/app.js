@@ -234,7 +234,9 @@ async function renderHome() {
           Un block explorer ti permette di "guardare dentro" la blockchain di Bitcoin: puoi controllare
           blocchi, transazioni e indirizzi in tempo reale, in modo semplice e trasparente. Non serve essere
           esperti: cerca qualcosa nella barra qui sopra, oppure esplora gli ultimi blocchi qui sotto. Se un
-          termine non ti è chiaro, dai un'occhiata al <a href="#/glossario">glossario</a>.
+          termine non ti è chiaro, dai un'occhiata al <a href="#/glossario">glossario</a>. Hai appena
+          comprato i tuoi primi bitcoin? Parti dalla guida
+          <a href="#/guide/primi-passi">🚀 primi passi</a>.
         </p>
       </div>
     </div>
@@ -1457,6 +1459,97 @@ function wireGlossarySearch() {
 
 const GUIDES = [
   {
+    slug: "primi-passi",
+    icon: "🚀",
+    title: "Primi passi con Bitcoin: la tua roadmap",
+    summary: "Hai appena comprato i tuoi primi bitcoin? Ecco cosa fare, in ordine, per proteggerli senza fretta.",
+    startHere: true,
+    body: () => `
+      <div class="intro-box">
+        <span class="intro-icon">🗺️</span>
+        <div>
+          <h1 style="font-size:1.2rem; margin-bottom:0.4rem;">Da dove comincio?</h1>
+          <p>
+            Non serve imparare tutto subito. Questa è una traccia consigliata, un passo alla volta: ogni
+            passo rimanda alla guida completa quando vuoi approfondire. Vai al tuo ritmo, e torna qui ogni
+            volta che ti serve orientarti di nuovo.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tip-title">1️⃣ Capisci dove sono i tuoi bitcoin adesso</div>
+        <p>
+          Se li hai comprati su un exchange, per ora sono in ${termLink("custodia", "custodial")} altrui: è
+          l'exchange, non tu, a tenere le ${termLink("chiavi private", "chiaveprivata")}. Va benissimo per
+          iniziare, ma finché restano lì dipendi dal fatto che l'exchange te li restituisca quando li chiedi.
+          Capire questa differenza è il primo passo prima di qualunque altra decisione.
+        </p>
+        <p><a class="term-link" href="#/guide/controllo-fondi">📖 Custodial o non-custodial: chi controlla davvero i tuoi bitcoin</a></p>
+      </div>
+
+      <div class="card">
+        <div class="tip-title">2️⃣ Scegli il tuo primo wallet</div>
+        <p>
+          Quando sei pronto a portare i fondi sotto il tuo controllo, ti serve un
+          ${termLink("wallet", "wallet")} non-custodial: un'app per il telefono va bene per iniziare con
+          piccole somme, un ${termLink("hardware wallet", "hardwarewallet")} è consigliato appena l'importo
+          cresce. Non c'è fretta: puoi lasciare i fondi sull'exchange finché non hai scelto con calma.
+        </p>
+        <p><a class="term-link" href="#/guide/scegli-wallet">📖 Scegli il tuo portafoglio (strumento interattivo)</a></p>
+        <p><a class="term-link" href="#/guide/primo-wallet">📖 Come scegliere il tuo primo wallet</a></p>
+      </div>
+
+      <div class="card">
+        <div class="tip-title">3️⃣ Genera e proteggi la seed phrase</div>
+        <p>
+          Il tuo nuovo wallet ti mostrerà una ${termLink("seed phrase", "seed")} di 12 o 24 parole: è l'unica
+          copia di backup di tutti i tuoi fondi futuri. Va trascritta su carta (mai in digitale) e conservata
+          con cura, prima ancora di ricevere il primo satoshi.
+        </p>
+        <p><a class="term-link" href="#/guide/seed-sicura">📖 Come proteggere la tua seed phrase</a></p>
+      </div>
+
+      <div class="card">
+        <div class="tip-title">4️⃣ Fai il tuo primo trasferimento con calma</div>
+        <p>
+          Per il primo trasferimento dall'exchange al tuo wallet, invia un importo piccolo di prova prima di
+          spostare tutto: se qualcosa non torna, avrai rischiato poco. Controlla sempre l'indirizzo prima di
+          confermare, e non farti prendere dal panico se la transazione resta qualche minuto in
+          ${termLink("attesa", "mempool")}: è normale, e la puoi seguire in tempo reale proprio in questo
+          block explorer.
+        </p>
+        <p><a class="term-link" href="#/guide/verifica-indirizzo">📖 Verifica un indirizzo prima di inviare (strumento)</a></p>
+        <p><a class="term-link" href="#/guide/fee-e-conferme">📖 Capire fee e conferme</a></p>
+      </div>
+
+      <div class="card">
+        <div class="tip-title">5️⃣ Impara a riconoscere le truffe più comuni</div>
+        <p>
+          Chi ha bitcoin diventa un bersaglio: falso supporto tecnico, siti clone, messaggi che promettono
+          guadagni facili. Nessun servizio legittimo ti chiederà mai la tua seed phrase.
+        </p>
+        <p><a class="term-link" href="#/guide/truffe-comuni">📖 Riconoscere le truffe Bitcoin più comuni</a></p>
+      </div>
+
+      <div class="card">
+        <div class="tip-title">6️⃣ Quando ti senti pronto: privacy e sovranità</div>
+        <p>
+          Non è un passo urgente, ma quando ti senti a tuo agio con le basi vale la pena scoprire come restare
+          più privato usando Bitcoin, e cosa significa verificare da solo le regole della rete con un tuo
+          nodo, invece di fidarti sempre di un servizio esterno come questo stesso block explorer.
+        </p>
+        <p><a class="term-link" href="#/guide/privacy-bitcoin">📖 Privacy su Bitcoin: pubblica, non anonima</a></p>
+        <p><a class="term-link" href="#/guide/gestisci-nodo">📖 Gestisci il tuo nodo</a></p>
+      </div>
+
+      <div class="nav-buttons" style="justify-content:center;">
+        <a class="btn btn-primary" href="#/guide">📚 Vedi tutte le guide →</a>
+        <a class="btn" href="#/glossario">📖 Vai al glossario →</a>
+      </div>
+    `,
+  },
+  {
     slug: "seed-sicura",
     icon: "🔐",
     title: "Come proteggere la tua seed phrase",
@@ -1896,7 +1989,7 @@ function renderGuideIndex() {
         (g) => `
         <li>
           <a class="row-link" href="#/guide/${g.slug}">
-            <div class="row-top"><span>${g.icon} ${fmt.escapeHtml(g.title)}</span>${g.featured ? `<span class="feature-badge">Interattivo</span>` : ""}</div>
+            <div class="row-top"><span>${g.icon} ${fmt.escapeHtml(g.title)}</span>${g.startHere ? `<span class="feature-badge">🚀 Inizia qui</span>` : g.featured ? `<span class="feature-badge">Interattivo</span>` : ""}</div>
             <div class="row-bottom"><span>${fmt.escapeHtml(g.summary)}</span></div>
           </a>
         </li>`
