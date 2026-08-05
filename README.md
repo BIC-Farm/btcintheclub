@@ -22,17 +22,23 @@ Funzionalità principali:
 - **Block Clock**: un orologio live che mostra da quanto tempo non si trova un nuovo blocco, con un anello
   di progresso verso la media di ~10 minuti e un punto luminoso che lo percorre in tempo reale. Aggiorna il
   conteggio ogni secondo e rileva da solo l'arrivo di un nuovo blocco, festeggiandolo con un effetto ping,
-  il numero che rimbalza e un messaggio celebrativo temporaneo — senza mai ricaricare la pagina.
+  il numero che rimbalza e un messaggio celebrativo temporaneo — senza mai ricaricare la pagina. Un link
+  "⛶ Modalità schermo intero" apre **`#/blockclock`**, una pagina dedicata senza header/footer con
+  un'edizione grande dello stesso orologio, pensata per restare aperta su un monitor o tablet dedicato come
+  display sempre acceso; un pulsante richiama anche la Fullscreen API del browser per nascondere pure la
+  barra degli indirizzi.
 - **Mining** (`#/mining`, in header): lo stato del mining in tempo reale spiegato in parole semplici —
-  hashrate della rete, countdown al prossimo aggiustamento della difficoltà, e un **countdown live al
-  prossimo halving** (barra di progresso sull'epoca corrente, blocchi rimanenti, ricompensa attuale/futura
-  nell'unità scelta BTC o sats) che si aggiorna da solo non appena arriva un nuovo blocco, senza ricaricare
-  la pagina. Include anche i pool di mining più attivi dell'ultima settimana con relativa percentuale di
-  blocchi trovati. Ogni sezione si carica in modo indipendente e ha un proprio pulsante "Riprova" se i dati
-  non arrivano, così un problema su una singola fonte non blocca tutta la pagina. La card dei pool ricorda
-  esplicitamente che le quote sono etichette rilevate da mempool.space (non un dato verificabile
-  crittograficamente), che i miner possono cambiare pool in pochi minuti, e che nessun pool può da solo
-  cambiare le regole del protocollo.
+  **grafico storico dell'hashrate** della rete (disegnato via SVG, senza librerie esterne) con periodi
+  selezionabili (1 mese / 3 mesi / 1 anno / 3 anni) e un tooltip interattivo al passaggio del mouse o del
+  dito che mostra valore e data di ogni punto, countdown al prossimo aggiustamento della difficoltà, e un
+  **countdown live al prossimo halving** (barra di progresso sull'epoca corrente, blocchi rimanenti,
+  ricompensa attuale/futura nell'unità scelta BTC o sats) che si aggiorna da solo non appena arriva un
+  nuovo blocco, senza ricaricare la pagina. Include anche i pool di mining più attivi dell'ultima settimana
+  con relativa percentuale di blocchi trovati. Ogni sezione si carica in modo indipendente e ha un proprio
+  pulsante "Riprova" se i dati non arrivano, così un problema su una singola fonte non blocca tutta la
+  pagina. La card dei pool ricorda esplicitamente che le quote sono etichette rilevate da mempool.space
+  (non un dato verificabile crittograficamente), che i miner possono cambiare pool in pochi minuti, e che
+  nessun pool può da solo cambiare le regole del protocollo.
 - **Dettaglio blocco**: informazioni principali in evidenza, dettagli tecnici avanzati (nonce, difficoltà,
   merkle root, ecc.) nascosti dietro un pannello a scomparsa, elenco transazioni con paginazione, e una
   **mappa visiva della composizione del blocco**: un mosaico di rettangoli (uno per transazione, dati reali
@@ -72,6 +78,12 @@ Funzionalità principali:
 - **Guide** (`#/guide`) con approfondimenti pratici per chi inizia: come proteggere la seed phrase,
   custodial vs non-custodial, come scegliere il primo wallet, le truffe Bitcoin più comuni, come funzionano
   fee e conferme, e le basi della privacy su Bitcoin.
+- **Primi passi con Bitcoin: la tua roadmap** (`#/guide/primi-passi`, in cima alla sezione Guide con badge
+  "🚀 Inizia qui", e linkata anche in home): la guida pensata per chi ha appena comprato i suoi primi
+  bitcoin e non sa da dove cominciare. Non insegna nulla di nuovo, ma mette in ordine consigliato le guide
+  già esistenti — dal capire dove sono i propri fondi oggi, alla scelta del wallet, alla protezione della
+  seed, al primo trasferimento con calma, fino a truffe da riconoscere e passi più avanzati (privacy, nodo
+  proprio) da affrontare quando si è pronti.
 - **Toggle BTC / sats** in header: cambia l'unità di visualizzazione di tutti gli importi con un click,
   preferenza salvata in locale così resta impostata anche ai visite successive.
 - **Genera una seed con i dadi** (`#/guide/dadi-seed`, dentro la sezione Guide): demo didattica che mostra
@@ -97,6 +109,8 @@ Funzionalità principali:
   guida sul nodo.
 - **Glossario ampliato** con SegWit, Taproot, PSBT, Multisig e Lightning Network, oltre ai ~25 termini di
   base — ogni indirizzo mostrato nell'app ha un prefisso (`1…`, `3…`, `bc1q…`, `bc1p…`) che ora è spiegato.
+- **Novità** (`#/novita`, in header e in fondo pagina): il changelog del sito, versione dopo versione, per
+  vedere in ogni momento cosa è cambiato di recente senza doverlo scoprire per caso.
 
 ### Come funziona
 
