@@ -1305,6 +1305,97 @@ const GLOSSARY_TERMS = [
   { slug: "psbt", icon: "📋", term: "PSBT", desc: "Partially Signed Bitcoin Transaction: un formato standard per costruire e firmare una transazione in più passaggi separati (es. su un hardware wallet offline), utile soprattutto per i wallet multisig." },
   { slug: "multisig", icon: "🔏", term: "Multisig", desc: "Un wallet che richiede le firme di più chiavi private (es. 2 su 3) per spendere i fondi, invece di una sola: nessuna singola chiave rubata o persa basta a compromettere i fondi." },
   { slug: "lightning", icon: "⚡", term: "Lightning Network", desc: "Una rete costruita \"sopra\" Bitcoin per fare pagamenti istantanei ed economici tramite canali privati tra due parti, che si aggiornano fuori dalla blockchain principale e vi si riconciliano solo all'apertura e alla chiusura del canale." },
+
+  // Rete e protocollo
+  { slug: "blockchain", icon: "⛓️", term: "Blockchain", desc: "La catena di tutti i blocchi, dal primo (2009) all'ultimo minato: un registro pubblico e condiviso che chiunque può scaricare e verificare da solo, senza fidarsi di un'autorità centrale." },
+  { slug: "nodo", icon: "🖥️", term: "Nodo (nodo completo)", desc: "Un computer che scarica e verifica da solo l'intera blockchain, applicando le regole del protocollo indipendentemente da chiunque altro. Farne girare uno è il modo più sicuro per usare Bitcoin senza fidarsi della parola di terzi.", guide: "gestisci-nodo" },
+  { slug: "nodopruned", icon: "🌾", term: "Nodo pruned", desc: "Un nodo completo che, dopo aver verificato ogni blocco, cancella i dati più vecchi che non servono più per continuare a validare la rete, occupando molto meno spazio su disco.", guide: "gestisci-nodo" },
+  { slug: "consenso", icon: "🤝", term: "Regole di consenso", desc: "L'insieme delle regole (formato delle transazioni, limite di 21 milioni, validità della proof-of-work, ecc.) che ogni nodo controlla in modo indipendente: se un blocco le viola, viene rifiutato, chiunque l'abbia minato." },
+  { slug: "pow", icon: "⛏️", term: "Proof of Work (PoW)", desc: "La \"prova di lavoro\" che dimostra che un miner ha speso energia reale per trovare un blocco valido, rendendo costosissimo falsificare la blockchain o riscrivere la sua storia." },
+  { slug: "miner", icon: "⚙️", term: "Miner (minatore)", desc: "Chi partecipa al mining: mette a disposizione potenza di calcolo per cercare blocchi validi, in cambio della ricompensa di blocco e delle fee delle transazioni incluse." },
+  { slug: "asic", icon: "🔩", term: "ASIC", desc: "Un chip costruito esclusivamente per calcolare hash SHA-256 il più velocemente possibile: è l'hardware usato oggi da tutti i miner seri, molto più efficiente di una normale scheda video." },
+  { slug: "genesisblock", icon: "🌅", term: "Genesis block", desc: "Il primissimo blocco della blockchain, minato da Satoshi Nakamoto il 3 gennaio 2009. Contiene, incorporato nei suoi dati, il titolo di un articolo di giornale di quel giorno, a prova della data." },
+  { slug: "timestamp", icon: "🕰️", term: "Timestamp", desc: "La marca temporale che il miner inserisce nell'intestazione di un blocco al momento di crearlo: indica approssimativamente quando il blocco è stato trovato." },
+  { slug: "retep2p", icon: "🌐", term: "Rete peer-to-peer (P2P)", desc: "Bitcoin non ha un server centrale: migliaia di nodi in tutto il mondo si scambiano blocchi e transazioni direttamente tra loro, ciascuno alla pari (\"peer\") con tutti gli altri." },
+  { slug: "softfork", icon: "🔧", term: "Soft fork", desc: "Un aggiornamento delle regole che le rende più restrittive in modo retrocompatibile: i nodi non aggiornati continuano a considerare valida la catena, anche se non ne colgono tutte le nuove regole. SegWit e Taproot sono stati introdotti così." },
+  { slug: "hardfork", icon: "🔨", term: "Hard fork", desc: "Un cambiamento delle regole non retrocompatibile: i nodi non aggiornati rifiutano i nuovi blocchi, e la rete può dividersi in due catene separate se non c'è consenso unanime ad aggiornarsi." },
+  { slug: "reorg", icon: "🔀", term: "Riorganizzazione (reorg)", desc: "Quando la rete scarta temporaneamente uno o più blocchi recenti in favore di una catena alternativa più \"pesante\" trovata da altri miner. Di solito riguarda solo l'ultimo blocco ed è normale; oltre le poche conferme diventa quasi impossibile." },
+  { slug: "orphanblock", icon: "🍂", term: "Blocco orfano", desc: "Un blocco valido, minato correttamente, ma che alla fine non fa parte della catena più lunga perché un altro blocco alla stessa altezza è stato accettato dalla rete al suo posto." },
+  { slug: "blockreward", icon: "🎁", term: "Ricompensa di blocco (block reward)", desc: "I nuovi bitcoin che il protocollo assegna al miner che trova un blocco, tramite la transazione coinbase. Si dimezza a ogni halving, fino ad azzerarsi quando saranno stati emessi tutti i 21 milioni di bitcoin." },
+  { slug: "supply21m", icon: "🔒", term: "Limite di 21 milioni", desc: "Il numero massimo di bitcoin che potranno mai esistere, fissato nel protocollo fin dall'inizio. Nessuna autorità può crearne di più: è una delle proprietà che rendono bitcoin una moneta a offerta scarsa e prevedibile." },
+  { slug: "dust", icon: "✨", term: "Dust (polvere)", desc: "Un importo così piccolo che la fee necessaria per spenderlo in futuro costerebbe più dell'importo stesso: molti wallet segnalano o ignorano automaticamente questi UTXO \"di polvere\"." },
+  { slug: "rbf", icon: "🔁", term: "RBF (Replace-By-Fee)", desc: "Una funzione che permette di sostituire una transazione ancora in mempool con una identica ma con fee più alta, per farla confermare più velocemente se la prima resta bloccata troppo a lungo." },
+  { slug: "cpfp", icon: "👶", term: "CPFP (Child Pays For Parent)", desc: "Una tecnica per sbloccare una transazione con fee troppo bassa creandone una seconda, collegata alla prima, con una fee abbastanza alta da rendere conveniente per i miner confermarle entrambe insieme." },
+  { slug: "doublespend", icon: "⚠️", term: "Doppia spesa (double spend)", desc: "Il tentativo di spendere due volte lo stesso bitcoin. È esattamente il problema che la blockchain e la proof-of-work risolvono: una volta confermata con abbastanza conferme, una transazione è considerata definitiva." },
+  { slug: "attacco51", icon: "🛡️", term: "Attacco del 51%", desc: "Uno scenario teorico in cui un singolo soggetto controllasse più della metà dell'hashrate della rete, potendo così riscrivere gli ultimi blocchi. Sulla rete Bitcoin il costo in energia e hardware necessario lo rende oggi economicamente impraticabile." },
+  { slug: "sybil", icon: "👥", term: "Attacco Sybil", desc: "Un tentativo di influenzare la rete creando molti nodi o identità false. Bitcoin lo rende inutile: ogni nodo verifica le regole da solo, quindi contano le regole applicate, non quanti nodi le ripetono." },
+  { slug: "spv", icon: "📡", term: "SPV (nodo leggero)", desc: "Simplified Payment Verification: un modo per un wallet di controllare le proprie transazioni senza scaricare l'intera blockchain, appoggiandosi ai dati di altri nodi. Più comodo, ma richiede di fidarsi in parte di chi fornisce quei dati." },
+
+  // Crittografia, chiavi e indirizzi
+  { slug: "script", icon: "📜", term: "Bitcoin Script", desc: "Il linguaggio con cui sono scritte le condizioni per spendere un output: dalla semplice firma di una chiave privata a condizioni più complesse come multisig o timelock." },
+  { slug: "p2pkh", icon: "1️⃣", term: "P2PKH", desc: "Il formato di indirizzo Bitcoin più vecchio, che inizia con \"1\": paga a un hash della chiave pubblica del destinatario. Funziona ancora, ma è meno efficiente dei formati SegWit e Taproot più recenti." },
+  { slug: "p2sh", icon: "3️⃣", term: "P2SH", desc: "Un formato di indirizzo che inizia con \"3\": paga a uno script più complesso (es. multisig, o un indirizzo SegWit \"avvolto\" in modo compatibile con i wallet più vecchi)." },
+  { slug: "p2wpkh", icon: "🧩", term: "P2WPKH", desc: "Il formato SegWit nativo per un singolo proprietario, dietro agli indirizzi che iniziano con \"bc1q\": più economico da spendere di un P2PKH tradizionale." },
+  { slug: "p2tr", icon: "🌿", term: "P2TR (Taproot)", desc: "Il formato di indirizzo introdotto con Taproot, che inizia con \"bc1p\": rende una spesa semplice e una condizione complessa (es. multisig) indistinguibili sulla blockchain." },
+  { slug: "bech32", icon: "🔤", term: "Bech32 / Bech32m", desc: "La codifica usata dagli indirizzi SegWit (\"bc1q…\", standard Bech32) e Taproot (\"bc1p…\", variante Bech32m): include un checksum che rileva quasi ogni errore di battitura, segnalandolo prima di inviare fondi a un indirizzo sbagliato." },
+  { slug: "base58", icon: "🔡", term: "Base58Check", desc: "La codifica usata dagli indirizzi più vecchi (che iniziano con \"1\" o \"3\"): esclude lettere e numeri facili da confondere (0, O, I, l) e include un checksum di controllo." },
+  { slug: "checksumaddr", icon: "✅", term: "Checksum di un indirizzo", desc: "Alcuni caratteri finali dell'indirizzo, calcolati matematicamente dal resto: permettono di accorgersi quasi sempre se è stato trascritto male, prima ancora di provare a inviare fondi.", guide: "verifica-indirizzo" },
+  { slug: "hdwallet", icon: "🌳", term: "Wallet HD (gerarchico deterministico)", desc: "Un wallet che genera tutte le sue chiavi (e quindi tutti i suoi indirizzi) a partire da un'unica seed, seguendo uno standard (BIP32): basta la seed per ricreare l'intero wallet, anche su un altro dispositivo." },
+  { slug: "derivationpath", icon: "🗺️", term: "Percorso di derivazione", desc: "La \"strada\" numerica che un wallet HD segue a partire dalla seed per generare ciascun indirizzo specifico: usare lo stesso percorso su un altro wallet permette di ritrovare gli stessi fondi." },
+  { slug: "xpub", icon: "🔓", term: "Chiave pubblica estesa (xpub)", desc: "Una chiave che permette di generare e osservare tutti gli indirizzi futuri di un wallet HD senza poter spendere i fondi: utile per un wallet watch-only, ma va condivisa con cautela perché rivela l'intera cronologia del wallet." },
+  { slug: "bip", icon: "📄", term: "BIP (Bitcoin Improvement Proposal)", desc: "Un documento pubblico che propone uno standard o un cambiamento per Bitcoin (es. BIP39 per le seed phrase, BIP32 per i wallet HD): chiunque può proporne uno, ma diventa parte della rete solo se i nodi lo adottano volontariamente." },
+  { slug: "airgapped", icon: "🔌", term: "Air-gapped", desc: "Un dispositivo tenuto permanentemente scollegato da internet e da altri computer, che scambia dati solo tramite QR code o schede SD: riduce drasticamente la superficie di attacco per le chiavi private." },
+  { slug: "coldstorage", icon: "🧊", term: "Cold storage", desc: "Custodire le chiavi private su un dispositivo mai connesso a internet (es. un hardware wallet): l'approccio più sicuro per conservare somme importanti nel lungo periodo.", guide: "primo-wallet" },
+  { slug: "hotwallet", icon: "🔥", term: "Hot wallet", desc: "Un wallet installato su un dispositivo connesso a internet (telefono, computer): comodo per l'uso quotidiano, ma più esposto di un cold storage a malware o accessi non autorizzati.", guide: "primo-wallet" },
+  { slug: "watchonly", icon: "👁️", term: "Wallet watch-only", desc: "Un wallet configurato con la sola chiave pubblica (o xpub), che può mostrare saldo e cronologia ma non può firmare transazioni: utile per controllare i fondi custoditi altrove, ad esempio su un hardware wallet." },
+  { slug: "passphrase25", icon: "🔑", term: "Passphrase (25ª parola)", desc: "Una parola o frase aggiuntiva, scelta da te, che si somma alla seed phrase per generare un wallet diverso. Protegge anche se qualcuno trova la seed scritta su carta, ma se la dimentichi i fondi diventano irrecuperabili." },
+  { slug: "vanityaddress", icon: "🎀", term: "Vanity address", desc: "Un indirizzo generato appositamente perché contenga una sequenza di caratteri scelta (es. che inizi con un nome): non più sicuro di un indirizzo normale, richiede solo più tempo di calcolo per trovarlo." },
+  { slug: "changeaddress", icon: "♻️", term: "Indirizzo di resto (change)", desc: "Poiché un UTXO va speso per intero, se l'importo da inviare è inferiore, la differenza torna al mittente come nuovo UTXO su un indirizzo di resto, di solito generato automaticamente dal wallet." },
+  { slug: "riusoindirizzi", icon: "🔄", term: "Riuso degli indirizzi", desc: "Usare più volte lo stesso indirizzo per ricevere fondi: comodo, ma rende molto più facile per chiunque osservi la blockchain collegare tutte le tue transazioni tra loro. La maggior parte dei wallet genera un indirizzo nuovo a ogni ricezione.", guide: "privacy-bitcoin" },
+
+  // Privacy e sicurezza
+  { slug: "coinjoin", icon: "🌀", term: "CoinJoin", desc: "Una tecnica in cui più persone combinano le proprie transazioni in una sola, mescolando i loro fondi: rende più difficile per un osservatore esterno capire chi ha pagato chi." },
+  { slug: "chainanalysis", icon: "🔍", term: "Analisi della blockchain (chain analysis)", desc: "Il lavoro di aziende specializzate nel collegare indirizzi e transazioni pubbliche per risalire all'identità di chi le controlla, spesso incrociando i dati con exchange che richiedono KYC.", guide: "privacy-bitcoin" },
+  { slug: "kyc", icon: "🪪", term: "KYC (Know Your Customer)", desc: "Le verifiche d'identità richieste dagli exchange regolamentati prima di comprare o vendere bitcoin: una volta completate, collegano la tua identità reale agli indirizzi che usi con quell'exchange." },
+  { slug: "custodial", icon: "🏦", term: "Custodial", desc: "Un servizio (tipicamente un exchange) che tiene le chiavi private al posto tuo: comodo per iniziare, ma finché i fondi restano lì non sono davvero sotto il tuo controllo esclusivo.", guide: "controllo-fondi" },
+  { slug: "noncustodial", icon: "🔐", term: "Non-custodial", desc: "Un wallet in cui solo tu conosci la seed e le chiavi private: nessun altro può muovere i fondi senza il tuo consenso, ma la responsabilità della custodia ricade interamente su di te.", guide: "controllo-fondi" },
+  { slug: "notyourkeys", icon: "🗝️", term: "\"Not your keys, not your coins\"", desc: "Il principio riassuntivo della differenza tra custodial e non-custodial: se non controlli tu le chiavi private, in pratica stai solo fidandoti che chi le controlla ti restituisca i fondi quando li chiedi.", guide: "controllo-fondi" },
+  { slug: "simswap", icon: "📱", term: "SIM swap", desc: "Una truffa in cui il numero di telefono della vittima viene trasferito su una SIM controllata dall'attaccante, spesso per intercettare codici di verifica e accedere a exchange o wallet custodial.", guide: "truffe-comuni" },
+  { slug: "clipboardhijack", icon: "📋", term: "Dirottamento degli appunti", desc: "Un malware che, quando copi un indirizzo Bitcoin per incollarlo, lo sostituisce di nascosto con un indirizzo dell'attaccante. Controllare sempre i primi e gli ultimi caratteri prima di inviare riduce il rischio.", guide: "truffe-comuni" },
+  { slug: "dustingattack", icon: "🌫️", term: "Dusting attack", desc: "L'invio di piccolissimi importi (dust) a molti indirizzi, nel tentativo di collegarli tra loro se il destinatario li spende insieme in una transazione successiva: una tecnica di deanonimizzazione." },
+
+  // Lightning Network e layer 2
+  { slug: "layer2", icon: "🏗️", term: "Layer 2", desc: "Un sistema costruito \"sopra\" la blockchain di Bitcoin (come la Lightning Network) per rendere i pagamenti più veloci ed economici, riconciliandosi con la blockchain principale solo occasionalmente." },
+  { slug: "canalelightning", icon: "🌩️", term: "Canale Lightning", desc: "Un accordo tra due nodi Lightning, aperto con una transazione on-chain, all'interno del quale possono scambiarsi molti pagamenti istantanei senza toccare la blockchain fino alla chiusura del canale." },
+  { slug: "capacitacanale", icon: "📶", term: "Capacità del canale", desc: "L'importo totale di bitcoin bloccato in un canale Lightning quando viene aperto: limita quanto si può inviare o ricevere attraverso quel canale in un dato momento." },
+  { slug: "fatturalightning", icon: "🧾", term: "Fattura Lightning (invoice)", desc: "Una richiesta di pagamento Lightning, generata dal destinatario, che include importo, destinazione e una scadenza: il mittente la scansiona o incolla nel proprio wallet per pagare istantaneamente." },
+  { slug: "nodolightning", icon: "🔗", term: "Nodo Lightning", desc: "Un nodo Bitcoin che partecipa anche alla rete Lightning, aprendo e gestendo canali di pagamento con altri nodi." },
+  { slug: "submarineswap", icon: "🤿", term: "Submarine swap", desc: "Una tecnica che permette di scambiare fondi on-chain con fondi Lightning (o viceversa) senza bisogno di fidarsi di un intermediario, usata da alcuni wallet per gestire Lightning in automatico." },
+  { slug: "atomicswap", icon: "🔄", term: "Atomic swap", desc: "Uno scambio diretto tra due parti che, grazie a un accorgimento crittografico, o va a buon fine per entrambe o non avviene affatto: nessuna delle due può ricevere senza consegnare a sua volta." },
+
+  // Crittografia di base e cultura Bitcoin
+  { slug: "schnorr", icon: "✒️", term: "Firma Schnorr", desc: "Lo schema di firma introdotto con Taproot: più efficiente ed elegante di quello precedente, permette anche di combinare più firme multisig in una sola, indistinguibile da una firma singola." },
+  { slug: "ecdsa", icon: "📐", term: "ECDSA", desc: "Lo schema di firma digitale usato da Bitcoin fin dall'inizio, basato sulla crittografia a curve ellittiche: dimostra di possedere una chiave privata senza mai rivelarla." },
+  { slug: "chiavepubblica", icon: "🔓", term: "Chiave pubblica", desc: "Il numero derivato matematicamente dalla chiave privata (in un solo verso, impossibile da invertire): da essa si ricava l'indirizzo, e permette a chiunque di verificare una firma senza conoscere la chiave privata." },
+  { slug: "firmadigitale", icon: "✍️", term: "Firma digitale", desc: "La prova matematica, generata con la chiave privata, che autorizza la spesa di un UTXO: dimostra il possesso della chiave senza mai esporla, ed è unica per ogni transazione." },
+  { slug: "sha256", icon: "#️⃣", term: "SHA-256", desc: "La funzione crittografica di hashing usata da Bitcoin per il mining e per calcolare gli identificativi di blocchi e transazioni: stesso input produce sempre lo stesso output, ma è impossibile risalire all'input partendo dall'output." },
+  { slug: "ripemd160", icon: "🧬", term: "RIPEMD-160", desc: "Una seconda funzione di hashing, applicata dopo SHA-256, usata per accorciare la chiave pubblica negli indirizzi legacy e SegWit, rendendoli più corti da scrivere e condividere." },
+  { slug: "whitepaper", icon: "📃", term: "Whitepaper di Bitcoin", desc: "Il documento di 9 pagine pubblicato da Satoshi Nakamoto nell'ottobre 2008, intitolato \"Bitcoin: A Peer-to-Peer Electronic Cash System\", che descrive per primo il funzionamento di Bitcoin." },
+  { slug: "satoshinakamoto", icon: "👤", term: "Satoshi Nakamoto", desc: "Lo pseudonimo di chi (una persona o un gruppo) ha ideato Bitcoin, pubblicato il whitepaper nel 2008 e minato il genesis block nel 2009, per poi sparire dai contatti pubblici nel 2011. La sua identità reale non è mai stata confermata." },
+  { slug: "decentralizzazione", icon: "🕸️", term: "Decentralizzazione", desc: "Il fatto che nessun singolo soggetto controlli Bitcoin: migliaia di nodi e miner indipendenti, sparsi in tutto il mondo, devono trovarsi d'accordo sulle stesse regole perché la rete funzioni." },
+  { slug: "censura", icon: "🚫", term: "Resistenza alla censura", desc: "La proprietà per cui è estremamente difficile impedire a una transazione valida di essere confermata, perché basta un solo miner disposto a includerla tra le migliaia sparsi nel mondo." },
+  { slug: "soundmoney", icon: "🪙", term: "Sound money (moneta sana)", desc: "Un'espressione che indica una moneta con offerta prevedibile e non manipolabile da un'autorità centrale: i sostenitori di Bitcoin lo considerano tale grazie al limite fisso di 21 milioni di unità." },
+  { slug: "scarsitadigitale", icon: "💎", term: "Scarsità digitale", desc: "La proprietà, resa possibile per la prima volta da Bitcoin, di avere un bene puramente digitale che non può essere copiato o creato a piacere: l'offerta è fissata dal protocollo, non da chi lo emette." },
+  { slug: "storeofvalue", icon: "🏛️", term: "Riserva di valore (store of value)", desc: "La funzione di conservare potere d'acquisto nel tempo. Alcuni considerano bitcoin adatto a questo scopo proprio per la sua offerta fissa, anche se nel breve periodo il suo prezzo resta molto volatile." },
+  { slug: "dca", icon: "📈", term: "DCA (Dollar Cost Averaging)", desc: "Una strategia che consiste nel comprare bitcoin a intervalli regolari (es. ogni settimana) con un importo fisso, invece di provare a indovinare il momento \"giusto\": riduce l'impatto della volatilità di breve periodo." },
+  { slug: "selfcustody", icon: "🛡️", term: "Self-custody (autocustodia)", desc: "Tenere le proprie chiavi private in un wallet non-custodial, senza dipendere da un intermediario per accedere ai propri fondi.", guide: "controllo-fondi" },
+  { slug: "sovranitafinanziaria", icon: "👑", term: "Sovranità finanziaria", desc: "La capacità di gestire i propri fondi senza bisogno del permesso di banche, exchange o governi: è l'obiettivo finale a cui puntano l'autocustodia e il gestire un proprio nodo." },
+  { slug: "hodl", icon: "💪", term: "HODL", desc: "Un termine nato da un errore di battitura di \"hold\" (tenere) in un forum nel 2013, oggi usato nella community per indicare la scelta di conservare i propri bitcoin a lungo termine invece di venderli per il panico o la speculazione di breve periodo." },
+  { slug: "fud", icon: "😨", term: "FUD", desc: "Fear, Uncertainty and Doubt: paura, incertezza e dubbio. Indica notizie o commenti, spesso esagerati o infondati, diffusi per spaventare gli investitori e spingerli a vendere." },
+  { slug: "testnet", icon: "🧪", term: "Testnet", desc: "Una versione parallela della rete Bitcoin, con le stesse regole ma bitcoin senza alcun valore reale, usata da sviluppatori e wallet per fare prove senza rischiare fondi veri." },
+  { slug: "mainnet", icon: "🌍", term: "Mainnet", desc: "La rete Bitcoin \"vera\", quella con valore economico reale, in contrapposizione alla testnet usata solo per test e sviluppo. Tutto quello che vedi in questo block explorer riguarda la mainnet." },
+  { slug: "blockexplorer", icon: "🧭", term: "Block explorer", desc: "Uno strumento (come questo sito) che permette di consultare blocchi, transazioni e indirizzi della blockchain in modo leggibile, senza dover far girare un proprio nodo. Comodo, ma per definizione ti fai dire i dati da chi gestisce quel servizio." },
+  { slug: "ordinals", icon: "🖼️", term: "Ordinals / inscriptions", desc: "Una tecnica che permette di associare dati arbitrari (immagini, testo) a un singolo satoshi, sfruttando lo spazio disponibile nelle transazioni SegWit e Taproot. È un uso della blockchain estraneo al suo scopo originale di sistema di pagamento, e resta un argomento dibattuto nella community." },
 ];
 
 function renderGlossary(slug) {
@@ -1312,17 +1403,25 @@ function renderGlossary(slug) {
     <div class="breadcrumb"><a href="#/">Home</a> / Glossario</div>
     <h1>Glossario per principianti</h1>
     <p class="muted">Le parole chiave di Bitcoin, spiegate in modo semplice. Sei arrivato qui cliccando un termine? Lo trovi evidenziato qui sotto.</p>
-    <div class="glossary-grid">
+    <div class="search-input-wrap glossary-search-wrap">
+      <span class="icon">🔍</span>
+      <input type="search" id="glossary-search" placeholder="Cerca un termine (es. fee, seed, taproot)…" autocomplete="off">
+    </div>
+    <p class="small muted" id="glossary-count">${GLOSSARY_TERMS.length} termini</p>
+    <div class="glossary-grid" id="glossary-grid">
       ${GLOSSARY_TERMS.map(
         (t) => `
-        <div class="glossary-card" id="term-${t.slug}">
+        <div class="glossary-card" id="term-${t.slug}" data-search="${fmt.escapeHtml(`${t.term} ${t.desc}`.toLowerCase())}">
           <div class="term"><span class="icon">${t.icon}</span> ${fmt.escapeHtml(t.term)}</div>
           <p>${fmt.escapeHtml(t.desc)}</p>
           ${t.guide ? `<p><a class="term-link" href="#/guide/${t.guide}">📖 Leggi la guida completa</a></p>` : ""}
         </div>`
       ).join("")}
     </div>
+    <div class="empty-state" id="glossary-empty" style="display:none;">Nessun termine trovato. Prova con un'altra parola.</div>
   `);
+
+  wireGlossarySearch();
 
   if (slug) {
     const target = document.getElementById(`term-${slug}`);
@@ -1331,6 +1430,27 @@ function renderGlossary(slug) {
       target.classList.add("highlight");
     }
   }
+}
+
+function wireGlossarySearch() {
+  const input = document.getElementById("glossary-search");
+  const grid = document.getElementById("glossary-grid");
+  const empty = document.getElementById("glossary-empty");
+  const countEl = document.getElementById("glossary-count");
+  if (!input || !grid || !empty || !countEl) return;
+  const cards = Array.from(grid.children);
+
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    let visible = 0;
+    cards.forEach((card) => {
+      const match = !q || card.dataset.search.includes(q);
+      card.style.display = match ? "" : "none";
+      if (match) visible++;
+    });
+    empty.style.display = visible === 0 ? "" : "none";
+    countEl.textContent = q ? `${visible} di ${GLOSSARY_TERMS.length} termini` : `${GLOSSARY_TERMS.length} termini`;
+  });
 }
 
 // ---------- Guide ----------
