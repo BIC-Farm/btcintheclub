@@ -1239,9 +1239,39 @@ function txStatusLineHtml(tx, confirmations) {
     : `<span class="badge pending">⏳ In attesa in ${termLink("mempool", "mempool")}</span>`;
 }
 
-function startTxTracker(txid) {
-  const el = document.getElementById("tx-status-line");
-  if (!el) return;
+function txFeeDiagnosisHtml(txFeeRate, fees) {
+  if (!fees || !Number.isFinite(txFeeRate)) return "";
+  const rate = txFeeRate.toFixed(1);
+  let level = "";
+  let icon = "🐢";
+  let message;
+  if (txFeeRate >= fees.fastestFee) {
+    level = "good";
+    icon = "🚀";
+    message = `La tua fee (${rate} sat/vB) è alta rispetto a quelle consigliate ora (veloce: ${fees.fastestFee} sat/vB): dovrebbe confermarsi nel giro del prossimo blocco.`;
+  } else if (txFeeRate >= fees.halfHourFee) {
+    level = "good";
+    icon = "🙂";
+    message = `La tua fee (${rate} sat/vB) è in linea con la fascia "normale" di questo momento (${fees.halfHourFee} sat/vB): la conferma dovrebbe arrivare entro circa mezz'ora.`;
+  } else if (txFeeRate >= fees.economyFee) {
+    message = `La tua fee (${rate} sat/vB) è più bassa di quelle consigliate ora (economica: ${fees.economyFee} sat/vB): potrebbe volerci più tempo del solito, da qualche ora in su.`;
+  } else {
+    level = "bad";
+    icon = "⚠️";
+    message = `La tua fee (${rate} sat/vB) è sotto anche quella più economica consigliata ora (${fees.economyFee} sat/vB): se la rete è congestionata la transazione può restare in attesa a lungo, anche giorni — ma resta valida e prima o poi verrà inclusa. Se il tuo wallet lo supporta, puoi provare ${termLink("RBF", "rbf")} (sostituirla con una fee più alta) o ${termLink("CPFP", "cpfp")} (una seconda transazione che "spinge" la prima).`;
+  }
+  return `
+    <div class="tip-card ${level}" id="tx-fee-diagnosis-card" style="margin-top:0.75rem;">
+      <div class="tip-title">${icon} Quanto potrei dover aspettare?</div>
+      <p>${message}</p>
+      <p class="small muted" style="margin-top:0.4rem;">Confronto con le fee consigliate in questo momento: si aggiorna insieme allo stato della transazione, perché la congestione della rete cambia nel tempo.</p>
+    </div>`;
+}
+
+function startTxTracker(txid, txFeeRate) {
+  const statusEl = document.getElementById("tx-status-line");
+  const diagnosisEl = document.getElementById("tx-fee-diagnosis");
+  if (!statusEl) return;
 
   async function poll() {
     try {
@@ -1252,7 +1282,21 @@ function startTxTracker(txid) {
         confirmations = tipHeight - tx.status.block_height + 1;
       }
       if (document.getElementById("tx-status-line")) {
-        el.innerHTML = txStatusLineHtml(tx, confirmations);
+        statusEl.innerHTML = txStatusLineHtml(tx, confirmations);
+      }
+      if (diagnosisEl) {
+        if (tx.status.confirmed) {
+          diagnosisEl.innerHTML = "";
+        } else {
+          try {
+            const fees = await api.getFeeEstimates();
+            if (document.getElementById("tx-fee-diagnosis")) {
+              diagnosisEl.innerHTML = txFeeDiagnosisHtml(txFeeRate, fees);
+            }
+          } catch {
+            // Fee non disponibili in questo giro: lascia la diagnosi precedente invariata.
+          }
+        }
       }
     } catch {
       // Errore di rete silenzioso: si riprova al prossimo giro senza interrompere il tracker.
@@ -1266,7 +1310,11 @@ function startTxTracker(txid) {
 async function renderTx(txid) {
   if (!txid) return renderNotFound();
   renderLoading("Carico i dettagli della transazione…");
-  const [tx, pricesResult] = await Promise.all([api.getTx(txid), api.getPrices().catch(() => null)]);
+  const [tx, pricesResult, feesResult] = await Promise.all([
+    api.getTx(txid),
+    api.getPrices().catch(() => null),
+    api.getFeeEstimates().catch(() => null),
+  ]);
   const eurRate = pricesResult?.EUR ?? null;
   const confirmed = tx.status.confirmed;
 
@@ -1280,7 +1328,8 @@ async function renderTx(txid) {
   const totalIn = isCoinbase ? null : tx.vin.reduce((s, i) => s + (i.prevout?.value || 0), 0);
   const totalOut = tx.vout.reduce((s, o) => s + o.value, 0);
   const vsize = Math.ceil(tx.weight / 4);
-  const feeRate = isCoinbase ? null : (tx.fee / vsize).toFixed(1);
+  const feeRateNum = isCoinbase ? null : tx.fee / vsize;
+  const feeRate = isCoinbase ? null : feeRateNum.toFixed(1);
 
   const inputsHtml = isCoinbase
     ? `<li class="io-row"><span class="addr muted">Nuove monete create (ricompensa blocco)</span></li>`
@@ -1320,6 +1369,7 @@ async function renderTx(txid) {
     <h1>Transazione</h1>
     <p>${hashWithCopyHtml(tx.txid)}</p>
     <p id="tx-status-line">${txStatusLineHtml(tx, confirmations)}</p>
+    <div id="tx-fee-diagnosis">${!confirmed ? txFeeDiagnosisHtml(feeRateNum, feesResult) : ""}</div>
 
     <div class="card">
       <p><strong>In parole semplici:</strong>
@@ -1360,7 +1410,7 @@ async function renderTx(txid) {
   `);
 
   document.getElementById("crosscheck-tx-btn").addEventListener("click", () => crossCheckTxClientSide(tx.txid, tx));
-  startTxTracker(tx.txid);
+  startTxTracker(tx.txid, feeRateNum);
 }
 
 const TX_CROSSCHECK_FIELDS = [
