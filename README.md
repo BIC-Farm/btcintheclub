@@ -57,7 +57,11 @@ Funzionalità principali:
 - **Dettaglio transazione**: stato (confermata / in attesa) con **tracker live delle conferme** — si
   aggiorna da solo ogni 15 secondi finché resti sulla pagina, senza mai ricaricarla — numero di conferme,
   spiegazione in parole semplici di chi ha inviato cosa a chi (con controvalore in EUR quando disponibile),
-  elenco input/output.
+  elenco input/output. Per una transazione ancora **in attesa**, una card "Quanto potrei dover aspettare?"
+  confronta la fee pagata con quelle consigliate in questo momento e dà un giudizio pratico (dal "dovrebbe
+  confermarsi nel prossimo blocco" al "potrebbe restare in attesa a lungo", con un rimando a RBF e CPFP se
+  la fee è molto bassa) — anche questa si aggiorna da sola col passare del tempo, perché la congestione
+  della rete cambia.
 - **Dettaglio indirizzo**: saldo attuale (con controvalore in EUR quando disponibile), totale ricevuto,
   cronologia transazioni con importi in entrata/uscita evidenziati, e un pulsante per **salvare l'indirizzo
   nei preferiti** (solo nel browser, nessun account necessario).
