@@ -65,8 +65,17 @@ Funzionalità principali:
 - **Dettaglio indirizzo**: saldo attuale (con controvalore in EUR quando disponibile), totale ricevuto,
   cronologia transazioni con importi in entrata/uscita evidenziati, e un pulsante per **salvare l'indirizzo
   nei preferiti** (solo nel browser, nessun account necessario).
-- **I tuoi indirizzi salvati** (in home, se ne hai salvato almeno uno): saldo aggiornato dei tuoi indirizzi
-  preferiti senza doverli ripescare ogni volta dal wallet.
+- **I tuoi indirizzi salvati** (in home, con un modulo sempre visibile per aggiungerne): saldo aggiornato
+  dei tuoi indirizzi preferiti senza doverli ripescare ogni volta dal wallet, con un **totale complessivo**
+  e un **badge "● Novità"** su ogni voce il cui saldo o numero di transazioni è cambiato dall'ultima
+  visita — utile per accorgersi al volo di un pagamento arrivato o partito senza dover riaprire ogni
+  indirizzo uno per uno. Oltre ai singoli indirizzi, il modulo accetta anche una **chiave pubblica estesa
+  (xpub/ypub/zpub)**: viene decodificata interamente nel browser (derivazione BIP32 con aritmetica
+  secp256k1 e RIPEMD-160 scritte da zero in JavaScript puro, verificate con test differenziali contro
+  librerie di riferimento su centinaia di casi prima di essere collegate alla UI) per scoprire — con lo
+  stesso "gap limit" a 20 indirizzi usato dai wallet — tutti gli indirizzi da lei derivati che hanno un
+  saldo o una cronologia, mostrando saldo aggregato e dettaglio per indirizzo. Nessuna chiave privata
+  (xprv/yprv/zprv) viene mai accettata: viene riconosciuta e rifiutata esplicitamente.
 - **Verifica un indirizzo prima di inviare** (`#/guide/verifica-indirizzo`, dentro la sezione Guide):
   controlla il checksum (base58check o bech32/bech32m) di un indirizzo — legacy, P2SH, SegWit o Taproot —
   interamente nel browser, mostra l'indirizzo raggruppato a blocchi per un confronto manuale più facile, e
@@ -150,8 +159,9 @@ css/styles.css       stile dell'interfaccia
 js/api.js            chiamate alle API di mempool.space e al confronto con blockstream.info
 js/format.js         funzioni di formattazione (date, importi, hash abbreviati, cambio EUR, ecc.)
 js/app.js            router e logica delle varie viste (home, blocco, transazione, indirizzo, glossario, guide, mining)
-js/watchlist.js       salvataggio locale degli indirizzi preferiti (localStorage)
+js/watchlist.js       salvataggio locale degli indirizzi/chiavi xpub preferiti (localStorage)
 js/addresscheck.js    verifica del checksum di un indirizzo (base58check, bech32/bech32m)
+js/bip32.js           derivazione BIP32 da xpub/ypub/zpub (secp256k1 e RIPEMD-160 client-side) e scoperta indirizzi
 js/blockverify.js     ricalcolo client-side di merkle root e proof-of-work di un blocco
 js/bip39.js           generazione della mnemonic BIP39 dai tiri di dado
 js/bip39-wordlist.js  wordlist inglese ufficiale BIP39

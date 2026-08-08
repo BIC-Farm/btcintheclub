@@ -1,14 +1,14 @@
-const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+export const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+export const BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 const BECH32_CONST = 1;
 const BECH32M_CONST = 0x2bc830a3;
 
-async function sha256(bytes) {
+export async function sha256(bytes) {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return new Uint8Array(digest);
 }
 
-function base58Decode(str) {
+export function base58Decode(str) {
   let num = 0n;
   for (const ch of str) {
     const idx = BASE58_ALPHABET.indexOf(ch);
@@ -26,7 +26,7 @@ function base58Decode(str) {
   return new Uint8Array([...new Array(leadingZeros).fill(0), ...bytes]);
 }
 
-function polymod(values) {
+export function polymod(values) {
   const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
   let chk = 1;
   for (const v of values) {
@@ -39,7 +39,7 @@ function polymod(values) {
   return chk >>> 0;
 }
 
-function hrpExpand(hrp) {
+export function hrpExpand(hrp) {
   const ret = [];
   for (const c of hrp) ret.push(c.charCodeAt(0) >> 5);
   ret.push(0);

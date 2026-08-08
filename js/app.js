@@ -2,9 +2,21 @@ import { api, ApiError } from "./api.js";
 import * as fmt from "./format.js";
 import { diceRollsToMnemonic, ROLLS_REQUIRED, looksNonRandom } from "./bip39.js";
 import { squarify, computeAreas, feeRateColor, FEE_COLOR_BUCKETS, COINBASE_COLOR } from "./treemap.js";
-import { getWatchlist, isWatched, addToWatchlist, removeFromWatchlist } from "./watchlist.js";
+import {
+  getWatchlist,
+  isWatched,
+  addToWatchlist,
+  removeFromWatchlist,
+  isXpubWatched,
+  addXpubToWatchlist,
+  removeXpubFromWatchlist,
+  updateXpubDiscovery,
+  getLastSeen,
+  setLastSeen,
+} from "./watchlist.js";
 import { validateAddress, chunkAddress } from "./addresscheck.js";
 import { verifyBlock } from "./blockverify.js";
+import { parseExtendedKey, discoverAddresses } from "./bip32.js";
 
 const app = document.getElementById("app");
 const searchForm = document.getElementById("search-form");
@@ -180,50 +192,146 @@ function feeSpeedRowsHtml(fees, eurRate) {
     .join("");
 }
 
-function watchlistSectionHtml(watchedResults, eurRate) {
-  if (watchedResults.length === 0) return "";
-  const items = watchedResults
-    .map(({ addr, info }) => {
-      if (!info) {
-        return `<li><a class="row-link" href="#/address/${addr}"><div class="row-top"><span class="mono">${fmt.shortAddress(addr)}</span><span class="muted small">dati non disponibili</span></div></a></li>`;
-      }
-      const funded = info.chain_stats.funded_txo_sum + info.mempool_stats.funded_txo_sum;
-      const spent = info.chain_stats.spent_txo_sum + info.mempool_stats.spent_txo_sum;
-      const balance = funded - spent;
-      const fiat = fmt.formatFiat(balance, eurRate);
-      return `
-        <li>
-          <a class="row-link" href="#/address/${addr}">
-            <div class="row-top">
-              <span class="mono">${fmt.shortAddress(addr)}</span>
-              <span class="row-value">${fmt.formatBtc(balance)}</span>
-            </div>
-            <div class="row-bottom"><span class="muted">${fiat ? `~${fiat}` : ""}</span></div>
-          </a>
-        </li>`;
-    })
+function addressBalanceTxCount(info) {
+  const funded = info.chain_stats.funded_txo_sum + info.mempool_stats.funded_txo_sum;
+  const spent = info.chain_stats.spent_txo_sum + info.mempool_stats.spent_txo_sum;
+  const txCount = info.chain_stats.tx_count + info.mempool_stats.tx_count;
+  return { balance: funded - spent, txCount };
+}
+
+/** Badge "novità" se saldo o numero di transazioni sono cambiati dall'ultima visita; aggiorna subito il valore memorizzato. */
+function noveltyBadgeHtml(entryId, balance, txCount) {
+  const prev = getLastSeen(entryId);
+  setLastSeen(entryId, { balance, txCount });
+  if (!prev || (prev.balance === balance && prev.txCount === txCount)) return "";
+  const diff = balance - prev.balance;
+  const diffLabel = diff !== 0 ? ` ${fmt.formatBtc(diff, { sign: true })}` : "";
+  return `<span class="badge confirmed" title="Qualcosa è cambiato da quando hai controllato l'ultima volta">● Novità${diffLabel}</span>`;
+}
+
+function watchlistAddressRowHtml({ address, info }, eurRate) {
+  if (!info) {
+    return `<li><a class="row-link" href="#/address/${address}"><div class="row-top"><span class="mono">${fmt.shortAddress(address)}</span><span class="muted small">dati non disponibili</span></div></a></li>`;
+  }
+  const { balance, txCount } = addressBalanceTxCount(info);
+  const fiat = fmt.formatFiat(balance, eurRate);
+  const badge = noveltyBadgeHtml(address, balance, txCount);
+  return `
+    <li>
+      <a class="row-link" href="#/address/${address}">
+        <div class="row-top">
+          <span class="mono">${fmt.shortAddress(address)}</span>
+          <span class="row-value">${fmt.formatBtc(balance)}</span>
+        </div>
+        <div class="row-bottom"><span class="muted">${fiat ? `~${fiat}` : ""}</span>${badge}</div>
+      </a>
+    </li>`;
+}
+
+function xpubShortLabel(entry) {
+  return entry.label || `${entry.keyType} ${entry.key.slice(0, 8)}…${entry.key.slice(-6)}`;
+}
+
+function watchlistXpubPlaceholderHtml(entry, domId) {
+  return `
+    <li class="row-link" id="${domId}">
+      <div class="row-top">
+        <span>🔑 ${fmt.escapeHtml(xpubShortLabel(entry))}</span>
+        <span class="muted small">scansione…</span>
+      </div>
+      <div class="row-bottom"><span class="muted">Controllo gli indirizzi derivati, un attimo…</span></div>
+    </li>`;
+}
+
+function watchlistXpubRowHtml(entry, addresses, eurRate) {
+  const totalBalance = addresses.reduce((s, a) => s + a.balance, 0);
+  const totalTxCount = addresses.reduce((s, a) => s + (a.txCount || 0), 0);
+  const fiat = fmt.formatFiat(totalBalance, eurRate);
+  const badge = noveltyBadgeHtml(entry.key, totalBalance, totalTxCount);
+  const usedCount = addresses.filter((a) => a.txCount > 0).length;
+  const detailRows = addresses
+    .filter((a) => a.txCount > 0)
+    .sort((a, b) => b.balance - a.balance)
+    .map(
+      (a) => `
+      <li class="io-row">
+        <span class="addr"><a href="#/address/${a.address}">${fmt.shortAddress(a.address)}</a> <span class="small muted">(${a.chain === 0 ? "ricezione" : "resto"} #${a.index})</span></span>
+        <span class="amt">${fmt.formatBtc(a.balance)}</span>
+      </li>`
+    )
     .join("");
   return `
+    <li class="row-link" style="cursor:default;">
+      <div class="row-top">
+        <span>🔑 ${fmt.escapeHtml(xpubShortLabel(entry))}</span>
+        <span class="row-value">${fmt.formatBtc(totalBalance)}</span>
+      </div>
+      <div class="row-bottom">
+        <span class="muted">${usedCount} ${usedCount === 1 ? "indirizzo usato" : "indirizzi usati"}${fiat ? ` · ~${fiat}` : ""}</span>
+        ${badge}
+      </div>
+      ${
+        usedCount > 0
+          ? `<details class="tech-details" style="margin-top:0.6rem;"><summary>Vedi gli indirizzi</summary><ul class="io-list" style="margin-top:0.5rem;">${detailRows}</ul></details>`
+          : ""
+      }
+      <div class="nav-buttons" style="margin:0.6rem 0 0;">
+        <button type="button" class="btn" data-remove-xpub="${fmt.escapeHtml(entry.key)}">Rimuovi dalla watchlist</button>
+      </div>
+    </li>`;
+}
+
+function watchlistAddFormHtml() {
+  return `
+    <div class="card" style="margin-top:0.75rem;">
+      <form id="watchlist-add-form" style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <input type="text" id="watchlist-add-input" class="mono" style="flex:1; min-width:220px; padding:0.5rem 0.7rem; border-radius:var(--pill); border:1px solid var(--border); background:var(--card-bg-hover); color:var(--ink);"
+          placeholder="Indirizzo, oppure xpub/ypub/zpub per tracciare tutti i suoi indirizzi" autocomplete="off" />
+        <button type="submit" class="btn btn-primary" id="watchlist-add-btn">+ Aggiungi</button>
+      </form>
+      <p class="small muted" style="margin:0.5rem 0 0;">
+        Una ${termLink("chiave xpub/ypub/zpub", "xpub")} è la chiave <strong>pubblica</strong> del tuo wallet:
+        permette di trovare tutti gli indirizzi da lei derivati con un saldo, ma non permette mai di spendere
+        fondi. Non incollare mai qui una chiave che inizia con xprv/yprv/zprv: quella è privata.
+      </p>
+      <div id="watchlist-add-status"></div>
+    </div>`;
+}
+
+function watchlistSectionHtml(addressResults, xpubEntries, eurRate) {
+  const hasEntries = addressResults.length > 0 || xpubEntries.length > 0;
+  const addressItems = addressResults.map((r) => watchlistAddressRowHtml(r, eurRate)).join("");
+  const addressSubtotal = addressResults.reduce((s, { info }) => s + (info ? addressBalanceTxCount(info).balance : 0), 0);
+  const xpubPlaceholders = xpubEntries.map((e, i) => watchlistXpubPlaceholderHtml(e, `xpub-watch-${i}`)).join("");
+  return `
     <h2 class="section-title">⭐ I tuoi indirizzi salvati</h2>
-    <ul class="block-list">${items}</ul>
+    ${
+      hasEntries
+        ? `<p class="small muted" id="watchlist-total">Totale: ${fmt.formatBtc(addressSubtotal)}${xpubEntries.length ? " (+ scansione xpub in corso…)" : ""}</p>
+           <ul class="block-list" id="watchlist-list">${addressItems}${xpubPlaceholders}</ul>`
+        : `<p class="small muted">Non hai ancora salvato nessun indirizzo. Aggiungine uno qui sotto, oppure usa la stellina ★ nella pagina di un indirizzo.</p>`
+    }
+    ${watchlistAddFormHtml()}
   `;
 }
 
 async function renderHome() {
   renderLoading("Carico gli ultimi dati dalla blockchain…");
-  const watchedAddresses = getWatchlist();
-  const [tipHeight, blocks, mempool, fees, pricesResult, watchedResults] = await Promise.all([
+  const watchlistEntries = getWatchlist();
+  const addressEntries = watchlistEntries.filter((e) => e.type === "address");
+  const xpubEntries = watchlistEntries.filter((e) => e.type === "xpub");
+  const [tipHeight, blocks, mempool, fees, pricesResult, addressResults] = await Promise.all([
     api.getTipHeight(),
     api.getRecentBlocks(),
     api.getMempool(),
     api.getFeeEstimates(),
     api.getPrices().catch(() => null),
     Promise.all(
-      watchedAddresses.map((addr) =>
+      addressEntries.map((e) =>
         api
-          .getAddress(addr)
-          .then((info) => ({ addr, info }))
-          .catch(() => ({ addr, info: null }))
+          .getAddress(e.address)
+          .then((info) => ({ address: e.address, info }))
+          .catch(() => ({ address: e.address, info: null }))
       )
     ),
   ]);
@@ -245,7 +353,7 @@ async function renderHome() {
       </div>
     </div>
 
-    ${watchlistSectionHtml(watchedResults, eurRate)}
+    ${watchlistSectionHtml(addressResults, xpubEntries, eurRate)}
 
     <div class="card block-clock-card" id="block-clock-card">
       <div class="block-clock">
@@ -321,7 +429,146 @@ async function renderHome() {
     if (parseHash().length === 0) router();
   });
 
+  wireWatchlistAddForm();
+  wireWatchlistXpubScans(xpubEntries, eurRate, addressSubtotalFromResults(addressResults));
+
   if (blocks[0]) startBlockClock(blocks[0].height, blocks[0].timestamp);
+}
+
+function addressSubtotalFromResults(addressResults) {
+  return addressResults.reduce((s, { info }) => s + (info ? addressBalanceTxCount(info).balance : 0), 0);
+}
+
+/** Interroga l'API per un indirizzo derivato durante la scansione di una chiave estesa (nessuna chiamata avviene in bip32.js). */
+async function checkAddressForDiscovery(address) {
+  try {
+    const info = await api.getAddress(address);
+    const { balance, txCount } = addressBalanceTxCount(info);
+    return { used: txCount > 0, balance, txCount };
+  } catch {
+    return { used: false, balance: 0, txCount: 0 };
+  }
+}
+
+async function wireWatchlistXpubScans(xpubEntries, eurRate, addressSubtotal) {
+  if (xpubEntries.length === 0) return;
+  let runningTotal = addressSubtotal;
+  let remaining = xpubEntries.length;
+
+  const updateTotal = () => {
+    const totalEl = document.getElementById("watchlist-total");
+    if (!totalEl) return;
+    totalEl.textContent = `Totale: ${fmt.formatBtc(runningTotal)}${remaining > 0 ? ` (+ scansione in corso per ${remaining} ${remaining === 1 ? "chiave" : "chiavi"}…)` : ""}`;
+  };
+
+  await Promise.all(
+    xpubEntries.map(async (entry, i) => {
+      const rowEl = document.getElementById(`xpub-watch-${i}`);
+      try {
+        const parsed = await parseExtendedKey(entry.key);
+        if (!parsed.valid) throw new Error(parsed.reason);
+
+        // 1) ricontrolla il saldo degli indirizzi già noti da scansioni precedenti
+        const knownResults = await Promise.all(
+          entry.discoveredAddresses.map(async (a) => {
+            const info = await checkAddressForDiscovery(a.address);
+            return { address: a.address, chain: a.chain, index: a.index, balance: info.balance, txCount: info.txCount };
+          })
+        );
+
+        // 2) scansione incrementale: solo gli indici mai controllati prima, per non rifare da zero ogni volta
+        const scan = await discoverAddresses(parsed, checkAddressForDiscovery, {
+          startReceive: entry.maxUsedReceive + 1,
+          startChange: entry.maxUsedChange + 1,
+        });
+        if (scan.addresses.length > 0) updateXpubDiscovery(entry.key, scan);
+
+        const newResults = scan.addresses.map((a) => ({ address: a.address, chain: a.chain, index: a.index, balance: a.balance, txCount: a.txCount ?? 1 }));
+        const combined = [...knownResults, ...newResults];
+
+        runningTotal += combined.reduce((s, a) => s + a.balance, 0);
+        remaining--;
+        if (rowEl) rowEl.outerHTML = watchlistXpubRowHtml(entry, combined, eurRate);
+        updateTotal();
+      } catch {
+        remaining--;
+        if (rowEl) {
+          rowEl.innerHTML = `
+            <div class="row-top"><span>🔑 ${fmt.escapeHtml(xpubShortLabel(entry))}</span></div>
+            <div class="row-bottom"><span class="muted">Impossibile controllare questa chiave adesso.</span></div>`;
+        }
+        updateTotal();
+      }
+    })
+  );
+}
+
+function wireWatchlistAddForm() {
+  const form = document.getElementById("watchlist-add-form");
+  if (!form) return;
+  const input = document.getElementById("watchlist-add-input");
+  const btn = document.getElementById("watchlist-add-btn");
+  const status = document.getElementById("watchlist-add-status");
+
+  document.getElementById("watchlist-list")?.addEventListener("click", (e) => {
+    const removeBtn = e.target.closest("button[data-remove-xpub]");
+    if (!removeBtn) return;
+    removeXpubFromWatchlist(removeBtn.dataset.removeXpub);
+    router();
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const value = input.value.trim();
+    if (!value) return;
+    btn.disabled = true;
+    status.innerHTML = "";
+
+    const addressResult = await validateAddress(value);
+    if (addressResult.valid) {
+      if (isWatched(value)) {
+        status.innerHTML = `<p class="small muted" style="margin-top:0.5rem;">Questo indirizzo è già nella tua watchlist.</p>`;
+      } else {
+        addToWatchlist(value);
+        router();
+        return;
+      }
+      btn.disabled = false;
+      return;
+    }
+
+    const parsed = await parseExtendedKey(value);
+    if (parsed.valid) {
+      if (isXpubWatched(value)) {
+        status.innerHTML = `<p class="small muted" style="margin-top:0.5rem;">Questa chiave è già nella tua watchlist.</p>`;
+        btn.disabled = false;
+        return;
+      }
+      btn.textContent = "Scansione…";
+      let scanned = 0;
+      try {
+        const discovery = await discoverAddresses(parsed, checkAddressForDiscovery, {
+          onProgress: () => {
+            scanned++;
+            status.innerHTML = `<p class="small muted" style="margin-top:0.5rem;">🔍 Controllo indirizzo ${scanned}… (gli indirizzi già usati restano, mi fermo dopo 20 non usati di fila su ciascuna catena)</p>`;
+          },
+        });
+        addXpubToWatchlist(value, parsed.type, parsed.addressType, discovery);
+        router();
+        return;
+      } catch {
+        status.innerHTML = `<p class="small muted" style="margin-top:0.5rem;">Non sono riuscito a completare la scansione. Riprova.</p>`;
+        btn.disabled = false;
+        btn.textContent = "+ Aggiungi";
+      }
+      return;
+    }
+
+    const looksLikeExtendedKey = /^(xpub|ypub|zpub|xprv|yprv|zprv)/.test(value);
+    const message = looksLikeExtendedKey ? parsed.reason : "Non sembra un indirizzo Bitcoin valido né una chiave xpub/ypub/zpub. Controlla di averlo copiato per intero.";
+    status.innerHTML = `<p class="small muted" style="margin-top:0.5rem;">${fmt.escapeHtml(message)}</p>`;
+    btn.disabled = false;
+  });
 }
 
 const BLOCK_CLOCK_AVG_SECONDS = 600;
@@ -1639,7 +1886,7 @@ const GLOSSARY_TERMS = [
   { slug: "checksumaddr", icon: "✅", term: "Checksum di un indirizzo", desc: "Alcuni caratteri finali dell'indirizzo, calcolati matematicamente dal resto: permettono di accorgersi quasi sempre se è stato trascritto male, prima ancora di provare a inviare fondi.", guide: "verifica-indirizzo" },
   { slug: "hdwallet", icon: "🌳", term: "Wallet HD (gerarchico deterministico)", desc: "Un wallet che genera tutte le sue chiavi (e quindi tutti i suoi indirizzi) a partire da un'unica seed, seguendo uno standard (BIP32): basta la seed per ricreare l'intero wallet, anche su un altro dispositivo." },
   { slug: "derivationpath", icon: "🗺️", term: "Percorso di derivazione", desc: "La \"strada\" numerica che un wallet HD segue a partire dalla seed per generare ciascun indirizzo specifico: usare lo stesso percorso su un altro wallet permette di ritrovare gli stessi fondi." },
-  { slug: "xpub", icon: "🔓", term: "Chiave pubblica estesa (xpub)", desc: "Una chiave che permette di generare e osservare tutti gli indirizzi futuri di un wallet HD senza poter spendere i fondi: utile per un wallet watch-only, ma va condivisa con cautela perché rivela l'intera cronologia del wallet." },
+  { slug: "xpub", icon: "🔓", term: "Chiave pubblica estesa (xpub/ypub/zpub)", desc: "Una chiave che permette di generare e osservare tutti gli indirizzi futuri di un wallet HD senza poter spendere i fondi: utile per un wallet watch-only, ma va condivisa con cautela perché rivela l'intera cronologia del wallet. \"xpub\", \"ypub\" e \"zpub\" indicano lo stesso concetto per formati di indirizzo diversi (legacy, SegWit annidato, SegWit nativo): in questo block explorer puoi incollarne una nella watchlist per tracciare automaticamente tutti gli indirizzi da lei derivati con un saldo, tutto calcolato nel tuo browser." },
   { slug: "bip", icon: "📄", term: "BIP (Bitcoin Improvement Proposal)", desc: "Un documento pubblico che propone uno standard o un cambiamento per Bitcoin (es. BIP39 per le seed phrase, BIP32 per i wallet HD): chiunque può proporne uno, ma diventa parte della rete solo se i nodi lo adottano volontariamente." },
   { slug: "airgapped", icon: "🔌", term: "Air-gapped", desc: "Un dispositivo tenuto permanentemente scollegato da internet e da altri computer, che scambia dati solo tramite QR code o schede SD: riduce drasticamente la superficie di attacco per le chiavi private." },
   { slug: "coldstorage", icon: "🧊", term: "Cold storage", desc: "Custodire le chiavi private su un dispositivo mai connesso a internet (es. un hardware wallet): l'approccio più sicuro per conservare somme importanti nel lungo periodo.", guide: "primo-wallet" },
