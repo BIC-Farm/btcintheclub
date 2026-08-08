@@ -3009,6 +3009,31 @@ function renderAddressChecker(guide) {
 
 const CHANGELOG = [
   {
+    version: "Watchlist con chiavi xpub/ypub/zpub e badge novità",
+    date: "8 agosto 2026",
+    items: [
+      `Ogni indirizzo salvato ricorda ora l'ultimo saldo visto: se qualcosa cambia dall'ultima visita, un badge "● Novità" lo segnala subito, con la differenza, senza dover riaprire ogni indirizzo per accorgersene.`,
+      "La watchlist accetta ora anche una chiave pubblica estesa (xpub/ypub/zpub), non solo singoli indirizzi: viene decodificata interamente nel browser per scoprire e tracciare tutti gli indirizzi da lei derivati che hanno un saldo o una cronologia, con lo stesso criterio (\"gap limit\") usato dalla maggior parte dei wallet.",
+      "Le chiavi private (xprv/yprv/zprv) vengono riconosciute e rifiutate esplicitamente, con un messaggio chiaro: non vanno mai incollate da nessuna parte.",
+    ],
+  },
+  {
+    version: "Diagnosi della fee per transazioni in attesa",
+    date: "8 agosto 2026",
+    items: [
+      `Nella pagina di una transazione non ancora confermata, una nuova card "Quanto potrei dover aspettare?" confronta la fee pagata con quelle consigliate in questo momento e dà un giudizio pratico su quanto potrebbe volerci, con un rimando a RBF e CPFP se la fee è molto bassa.`,
+      "Si aggiorna da sola insieme al tracker live esistente, perché la congestione della rete cambia nel tempo.",
+    ],
+  },
+  {
+    version: "Pool di mining più completi",
+    date: "8 agosto 2026",
+    items: [
+      "La sezione pool di mining passa da 6 a 15 pool mostrati, con un selettore di periodo (24h / 3 giorni / 1 settimana / 1 mese) e una barra impilata colorata che mostra a colpo d'occhio la distribuzione tra pool.",
+      "Quando disponibile, mostra anche l'efficienza media nella selezione delle fee per ciascun pool.",
+    ],
+  },
+  {
     version: "Novità",
     date: "5 agosto 2026",
     items: [
