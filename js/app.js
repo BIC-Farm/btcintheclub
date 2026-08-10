@@ -355,6 +355,7 @@ async function renderHome() {
 
     ${watchlistSectionHtml(addressResults, xpubEntries, eurRate)}
 
+    <h2 class="section-title" style="margin-top:0;">Stato della rete adesso</h2>
     <div class="card block-clock-card" id="block-clock-card">
       <div class="block-clock">
         <div class="block-clock-ping" id="block-clock-ping"></div>
@@ -375,15 +376,6 @@ async function renderHome() {
         <p class="small" style="margin-top:0.4rem;"><a class="term-link" href="#/blockclock">⛶ Modalità schermo intero →</a></p>
       </div>
     </div>
-
-    <a class="feature-card" href="#/guide/dadi-seed">
-      <span class="feature-icon">🎲</span>
-      <div class="feature-body">
-        <div class="feature-title">Genera una seed con i dadi <span class="feature-badge">Interattivo</span></div>
-        <div class="feature-desc">Prova con mano come dei tiri di dado fisico diventano una mnemonic BIP39 — demo didattica, si sblocca solo offline.</div>
-      </div>
-      <span class="feature-arrow">→</span>
-    </a>
 
     <div class="stat-grid">
       <div class="stat-card">
@@ -423,6 +415,15 @@ async function renderHome() {
       <a class="btn btn-primary" href="#/blocchi">📦 Vedi tutti i blocchi →</a>
       <a class="btn" href="#/mining">⛏️ Scopri il mining →</a>
     </div>
+
+    <a class="feature-card" href="#/guide/dadi-seed">
+      <span class="feature-icon">🎲</span>
+      <div class="feature-body">
+        <div class="feature-title">Genera una seed con i dadi <span class="feature-badge">Interattivo</span></div>
+        <div class="feature-desc">Prova con mano come dei tiri di dado fisico diventano una mnemonic BIP39 — demo didattica, si sblocca solo offline.</div>
+      </div>
+      <span class="feature-arrow">→</span>
+    </a>
   `);
 
   document.getElementById("home-refresh").addEventListener("click", () => {
