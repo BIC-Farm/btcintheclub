@@ -2424,6 +2424,15 @@ const GUIDES = [
     component: "address-checker",
   },
   {
+    slug: "viaggio-transazione",
+    icon: "🧭",
+    title: "Il viaggio di una transazione",
+    summary: "Segui passo passo cosa succede da quando premi \"invia\" a quando i bitcoin sono al sicuro nella blockchain, con dati reali della rete in questo momento.",
+    interactive: true,
+    featured: true,
+    component: "tx-journey",
+  },
+  {
     slug: "fee-e-conferme",
     icon: "⏱️",
     title: "Capire fee e conferme",
@@ -2461,6 +2470,7 @@ const GUIDES = [
       </div>
 
       <div class="nav-buttons">
+        <a class="btn" href="#/guide/viaggio-transazione">🧭 Segui il viaggio di una transazione →</a>
         <a class="btn" href="#/glossario/fee">Vai al glossario →</a>
       </div>
     `,
@@ -2599,6 +2609,7 @@ function renderGuide(slug) {
   if (!guide) return renderNotFound();
   if (guide.component === "wallet-chooser") return renderWalletChooser(guide);
   if (guide.component === "address-checker") return renderAddressChecker(guide);
+  if (guide.component === "tx-journey") return renderTxJourney(guide);
   if (guide.interactive) return renderDiceGenerator(guide);
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
@@ -2891,6 +2902,210 @@ const WALLET_FILTERS = [
   },
 ];
 
+// ---------- Il viaggio di una transazione ----------
+
+function txJourneyFeeVerdictHtml(rate, fees) {
+  if (!fees) return `<p class="small muted">Dati sulle fee non disponibili in questo momento.</p>`;
+  let icon = "🐢";
+  let level = "";
+  let msg;
+  if (rate >= fees.fastestFee) {
+    icon = "🚀";
+    level = "good";
+    msg = `Verresti scelto/a già nel prossimo blocco: è una fee alta rispetto a quelle consigliate ora (veloce: ${fees.fastestFee} sat/vB).`;
+  } else if (rate >= fees.halfHourFee) {
+    icon = "🙂";
+    level = "good";
+    msg = `In linea con la fascia "normale" di adesso (${fees.halfHourFee} sat/vB): conferma probabile entro circa mezz'ora.`;
+  } else if (rate >= fees.economyFee) {
+    msg = `Fee bassa: potrebbero volerci diverse ore prima che un miner la scelga (economica: ${fees.economyFee} sat/vB).`;
+  } else {
+    icon = "⚠️";
+    level = "bad";
+    msg = `Sotto anche la fee più economica consigliata ora (${fees.economyFee} sat/vB): con questa fee potresti restare in attesa a lungo, se la rete è congestionata.`;
+  }
+  return `
+    <div class="tip-card ${level}" style="margin-top:0.6rem;">
+      <div class="tip-title">${icon} Con questa fee, adesso...</div>
+      <p style="margin:0;">${msg}</p>
+    </div>`;
+}
+
+async function renderTxJourney(guide) {
+  renderLoading("Preparo il percorso interattivo…");
+  const [mempool, fees, blocks] = await Promise.all([
+    api.getMempool().catch(() => null),
+    api.getFeeEstimates().catch(() => null),
+    api.getRecentBlocks().catch(() => null),
+  ]);
+  const latestBlock = blocks?.[0] ?? null;
+
+  let step = 0;
+  let chosenRate = fees ? fees.halfHourFee : 12;
+  const sliderMax = Math.max(50, fees ? fees.fastestFee * 2 : 50);
+
+  const STEPS = [
+    {
+      icon: "📝",
+      title: "Crei la transazione",
+      body: () => `
+        <p>
+          Quando premi "invia" nel tuo ${termLink("wallet", "wallet")}, lui prepara la transazione per te:
+          sceglie quali ${termLink("UTXO", "utxo")} spendere, chi riceve i fondi, quanto, e firma tutto con
+          la tua ${termLink("chiave privata", "chiaveprivata")} — l'unica prova che quei bitcoin sono
+          davvero tuoi. Scegli anche una <strong>fee</strong>, in sat/vB: più alta è, più i
+          ${termLink("miner", "miner")} saranno motivati a includerla presto.
+        </p>
+        <p class="small muted" style="margin-top:0.5rem;">
+          Nessuna transazione viene creata davvero qui: è solo una spiegazione di cosa succede dietro le quinte.
+        </p>`,
+    },
+    {
+      icon: "📡",
+      title: "Si diffonde nella mempool",
+      body: () => `
+        <p>
+          La transazione firmata viene inviata a un nodo Bitcoin, che la controlla — è valida? le firme sono
+          corrette? gli UTXO non sono già stati spesi? — e poi la inoltra ai nodi vicini. In pochi secondi si
+          diffonde su migliaia di nodi in tutto il mondo, ognuno dei quali la tiene in attesa nella propria
+          ${termLink("mempool", "mempool")} finché non finisce in un blocco.
+        </p>
+        ${
+          mempool
+            ? `<div class="stat-grid" style="margin-top:0.75rem;">
+                <div class="stat-card">
+                  <span class="stat-icon">⏳</span>
+                  <div>
+                    <div class="label">In attesa proprio ora</div>
+                    <div class="value">${fmt.formatNumber(mempool.count)}</div>
+                    <div class="sub">transazioni nella mempool, in questo momento</div>
+                  </div>
+                </div>
+              </div>`
+            : ""
+        }`,
+    },
+    {
+      icon: "⛏️",
+      title: "Un miner ti sceglie in base alla fee",
+      body: () => `
+        <p>
+          I miner assemblano i blocchi scegliendo, tra tutte le transazioni in mempool, quelle che pagano di
+          più per byte: vogliono massimizzare le fee raccolte. Prova tu: scegli una fee e scopri in che
+          fascia finiresti, con i dati reali di questo momento.
+        </p>
+        <div class="tx-journey-slider-row">
+          <input type="range" min="1" max="${sliderMax}" step="1" value="${chosenRate}" id="tx-journey-fee-slider" aria-label="Scegli una fee in sat/vB" />
+          <div class="tx-journey-slider-value">La tua fee: <strong id="tx-journey-fee-value">${chosenRate}</strong> sat/vB</div>
+        </div>
+        <div id="tx-journey-fee-result">${txJourneyFeeVerdictHtml(chosenRate, fees)}</div>`,
+    },
+    {
+      icon: "📦",
+      title: "Finisce in un blocco",
+      body: () => `
+        <p>
+          In ${termLink("media ogni 10 minuti", "tempoblocco")} circa, un miner nel mondo trova un nuovo
+          ${termLink("blocco", "blocco")} valido e lo trasmette a tutta la rete. Il blocco contiene la tua
+          transazione insieme a molte altre, impacchettate insieme.
+        </p>
+        ${
+          latestBlock
+            ? `<a class="row-link" href="#/block/${latestBlock.height}" style="margin-top:0.75rem;">
+                <div class="row-top">
+                  <span>📦 L'ultimo blocco trovato in questo momento</span>
+                  <span class="row-value muted">#${fmt.formatNumber(latestBlock.height)} →</span>
+                </div>
+                <div class="row-bottom">
+                  <span class="muted">${fmt.formatNumber(latestBlock.tx_count)} transazioni incluse</span>
+                  <span class="muted">${fmt.formatTimeAgo(latestBlock.timestamp)}</span>
+                </div>
+              </a>`
+            : ""
+        }`,
+    },
+    {
+      icon: "✔️",
+      title: "Si conferma nella catena",
+      body: () => `
+        <p>
+          Ogni nuovo blocco che si aggiunge sopra il tuo è una ${termLink("conferma", "conferma")} in più: la
+          probabilità che la transazione venga "ribaltata" scende drasticamente a ogni conferma. Per piccoli
+          importi spesso basta 1 conferma; per somme importanti molti aspettano 6 conferme (circa un'ora)
+          prima di considerare il pagamento definitivo.
+        </p>
+        <p>
+          Ora che sai come funziona, prova a cercare una ${termLink("transazione", "transazione")} vera nella
+          barra di ricerca in alto, oppure guarda gli ultimi blocchi in home per vederne uno appena trovato.
+        </p>
+        <div class="nav-buttons">
+          <a class="btn" href="#/glossario/fee">Vai al glossario delle fee →</a>
+          <a class="btn btn-primary" href="#/">🏠 Torna alla home →</a>
+        </div>`,
+    },
+  ];
+
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/guide">Guide</a> / ${fmt.escapeHtml(guide.title)}</div>
+    <h1>${guide.icon} ${fmt.escapeHtml(guide.title)}</h1>
+    <div class="intro-box">
+      <span class="intro-icon">🧭</span>
+      <div>
+        <p style="margin:0;">
+          Segui i 5 passi qui sotto per capire cosa succede davvero da quando premi "invia" a quando i tuoi
+          bitcoin sono al sicuro nella blockchain. Dove possibile uso dati reali della rete in questo
+          momento, per rendere il percorso concreto e non solo teorico.
+        </p>
+      </div>
+    </div>
+    <div id="tx-journey-app"></div>
+  `);
+
+  const journeyApp = document.getElementById("tx-journey-app");
+
+  function dotsHtml() {
+    return STEPS.map(
+      (s, i) => `
+      <button type="button" class="tx-journey-dot ${i === step ? "active" : ""} ${i < step ? "done" : ""}"
+        data-action="goto" data-step="${i}" aria-label="Passo ${i + 1}: ${fmt.escapeHtml(s.title)}" title="${fmt.escapeHtml(s.title)}">
+        ${i < step ? "✔" : i + 1}
+      </button>`
+    ).join("");
+  }
+
+  function render() {
+    const s = STEPS[step];
+    journeyApp.innerHTML = `
+      <div class="tx-journey-progress">${dotsHtml()}</div>
+      <div class="card tx-journey-step">
+        <div class="tip-title">${s.icon} Passo ${step + 1} di ${STEPS.length}: ${fmt.escapeHtml(s.title)}</div>
+        ${s.body()}
+      </div>
+      <div class="nav-buttons" style="justify-content:space-between;">
+        <button type="button" class="btn" data-action="prev" ${step === 0 ? "disabled" : ""}>← Indietro</button>
+        ${step < STEPS.length - 1 ? `<button type="button" class="btn btn-primary" data-action="next">Avanti →</button>` : ""}
+      </div>
+    `;
+    const slider = document.getElementById("tx-journey-fee-slider");
+    slider?.addEventListener("input", (e) => {
+      chosenRate = Number(e.target.value);
+      document.getElementById("tx-journey-fee-value").textContent = chosenRate;
+      document.getElementById("tx-journey-fee-result").innerHTML = txJourneyFeeVerdictHtml(chosenRate, fees);
+    });
+  }
+
+  journeyApp.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    if (btn.dataset.action === "next" && step < STEPS.length - 1) step++;
+    else if (btn.dataset.action === "prev" && step > 0) step--;
+    else if (btn.dataset.action === "goto") step = Number(btn.dataset.step);
+    render();
+  });
+
+  render();
+}
+
 function renderWalletChooser(guide) {
   const filters = { platform: "all", use: "all", level: "all" };
 
@@ -3062,6 +3277,14 @@ function renderAddressChecker(guide) {
 // ---------- Novità (changelog) ----------
 
 const CHANGELOG = [
+  {
+    version: "Guida interattiva: il viaggio di una transazione",
+    date: "20 agosto 2026",
+    items: [
+      `Nuova guida interattiva "Il viaggio di una transazione": 5 passi da seguire, dalla creazione della transazione alla conferma nella blockchain, con dati reali della rete in questo momento.`,
+      "Al passo del mining puoi scegliere tu una fee con uno slider e vedere subito, con i dati live, in che fascia finiresti e quanto potresti dover aspettare.",
+    ],
+  },
   {
     version: "Fee di oggi confrontata con la media recente",
     date: "20 agosto 2026",

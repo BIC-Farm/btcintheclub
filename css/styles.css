@@ -1100,6 +1100,60 @@ details.tech-details summary:hover {
   gap: 0.35rem;
   margin-top: 0.7rem;
 }
+.tx-journey-progress {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+.tx-journey-dot {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card-bg-hover);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.tx-journey-dot:hover {
+  transform: scale(1.08);
+}
+.tx-journey-dot.done {
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+  border-color: var(--orange);
+}
+.tx-journey-dot.active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--orange) 85%, white), var(--orange) 65%);
+  color: #fff;
+  border-color: var(--orange);
+  transform: scale(1.12);
+}
+.tx-journey-step {
+  min-height: 12rem;
+}
+.tx-journey-slider-row {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.tx-journey-slider-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--orange);
+}
+.tx-journey-slider-value {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
 .wallet-tag {
   display: inline-block;
   padding: 0.15rem 0.55rem;
