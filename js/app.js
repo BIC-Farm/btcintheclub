@@ -3424,6 +3424,13 @@ function renderAddressChecker(guide) {
 
 const CHANGELOG = [
   {
+    version: "Menu hamburger per la navigazione mobile",
+    date: "20 agosto 2026",
+    items: [
+      `Sotto i 600px il menu (Home/Explorer/Mining/Guide/Glossario/Novità) non va più a capo su più righe: è nascosto dietro un pulsante hamburger che apre un pannello a tendina con voci più grandi e comode da toccare.`,
+    ],
+  },
+  {
     version: "Numero di versione del sito",
     date: "20 agosto 2026",
     items: [

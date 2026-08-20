@@ -112,6 +112,9 @@ Funzionalità principali:
 - **Pulsanti "copia"** su hash, txid e indirizzi, per non dover selezionare a mano testi lunghi.
 - **Grafica "liquid glass"**: pannelli traslucidi con effetto vetro smerigliato, sfondo a gradiente
   soffuso, forme arrotondate e tema chiaro/scuro automatico in base alle preferenze di sistema.
+- **Menu mobile**: sotto i 600px il menu principale si nasconde dietro un pulsante hamburger, che apre un
+  pannello a tendina con voci grandi e comode da toccare (si chiude cliccando una voce, fuori dal menu, o
+  con Esc). Su desktop il menu resta sempre visibile in linea nell'header.
 - **Guide** (`#/guide`) con approfondimenti pratici per chi inizia: come proteggere la seed phrase,
   custodial vs non-custodial, come scegliere il primo wallet, le truffe Bitcoin più comuni, come funzionano
   fee e conferme, e le basi della privacy su Bitcoin.
