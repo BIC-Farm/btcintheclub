@@ -82,7 +82,9 @@ Funzionalità principali:
   segnala se ha già una cronologia on-chain. Conferma solo che l'indirizzo è scritto correttamente, non che
   appartenga a chi pensi: lo strumento lo ricorda esplicitamente.
 - **Quanto costa inviare bitcoin adesso?** (in home): le fee consigliate del momento tradotte in sat e in
-  euro (se il cambio è disponibile) per tre velocità diverse, su una transazione tipo.
+  euro (se il cambio è disponibile) per tre velocità diverse, su una transazione tipo. Subito sotto, una
+  card confronta la fee "normale" di adesso con la media pagata dai blocchi nelle ultime 24 ore e
+  nell'ultima settimana, per capire a colpo d'occhio se conviene aspettare prima di inviare.
 - **Glossario** (`#/glossario`) con oltre 100 termini di Bitcoin spiegati in italiano semplice — dai
   fondamentali (blocco, fee, conferme) a protocollo e rete, indirizzi e chiavi, privacy e sicurezza,
   Lightning Network, crittografia di base e cultura Bitcoin — con una barra di ricerca che filtra la
