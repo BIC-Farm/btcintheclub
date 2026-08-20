@@ -192,6 +192,53 @@ function feeSpeedRowsHtml(fees, eurRate) {
     .join("");
 }
 
+/** Media della fee-rate mediana (avgFee_50) rilevata sui blocchi di un periodo, dai dati /v1/mining/blocks/fee-rates. */
+function averageFeeRateFromHistory(data) {
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const values = data.map((d) => d.avgFee_50).filter((v) => Number.isFinite(v));
+  if (values.length === 0) return null;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+/** Confronta la fee "normale" raccomandata adesso con la media pagata dai blocchi recenti, per capire se conviene aspettare. */
+function feeHistoryComparisonHtml(currentRate, avgFeeRate24h, avgFeeRate1w) {
+  const baseline = avgFeeRate1w ?? avgFeeRate24h;
+  if (!Number.isFinite(currentRate) || !Number.isFinite(baseline) || baseline <= 0) return "";
+  const ratio = currentRate / baseline;
+  let level = "";
+  let icon = "➡️";
+  let verdict = "È in linea con la media recente.";
+  if (ratio <= 0.75) {
+    level = "good";
+    icon = "📉";
+    verdict = "È più bassa della media recente: se non hai fretta, potrebbe essere un buon momento per inviare una transazione.";
+  } else if (ratio >= 1.3) {
+    level = "bad";
+    icon = "📈";
+    verdict = "È più alta della media recente: se la transazione non è urgente, potresti risparmiare aspettando che la rete si scarichi.";
+  }
+  const rows = [
+    { label: "Adesso (fee normale)", value: currentRate },
+    { label: "Media ultime 24 ore", value: avgFeeRate24h },
+    { label: "Media ultima settimana", value: avgFeeRate1w },
+  ]
+    .filter((r) => Number.isFinite(r.value))
+    .map(
+      (r) => `
+        <div class="row-top" style="padding:0.25rem 0;">
+          <span class="muted">${r.label}</span>
+          <span>${r.value.toFixed(1)} sat/vB</span>
+        </div>`
+    )
+    .join("");
+  return `
+    <div class="tip-card ${level}" id="fee-history-card">
+      <div class="tip-title">${icon} La fee di adesso rispetto agli ultimi giorni</div>
+      <p>${verdict}</p>
+      ${rows}
+    </div>`;
+}
+
 function addressBalanceTxCount(info) {
   const funded = info.chain_stats.funded_txo_sum + info.mempool_stats.funded_txo_sum;
   const spent = info.chain_stats.spent_txo_sum + info.mempool_stats.spent_txo_sum;
@@ -320,7 +367,7 @@ async function renderHome() {
   const watchlistEntries = getWatchlist();
   const addressEntries = watchlistEntries.filter((e) => e.type === "address");
   const xpubEntries = watchlistEntries.filter((e) => e.type === "xpub");
-  const [tipHeight, blocks, mempool, fees, pricesResult, addressResults] = await Promise.all([
+  const [tipHeight, blocks, mempool, fees, pricesResult, addressResults, feeRates24h, feeRates1w] = await Promise.all([
     api.getTipHeight(),
     api.getRecentBlocks(),
     api.getMempool(),
@@ -334,8 +381,12 @@ async function renderHome() {
           .catch(() => ({ address: e.address, info: null }))
       )
     ),
+    api.getMiningFeeRates("24h").catch(() => null),
+    api.getMiningFeeRates("1w").catch(() => null),
   ]);
   const eurRate = pricesResult?.EUR ?? null;
+  const avgFeeRate24h = averageFeeRateFromHistory(feeRates24h);
+  const avgFeeRate1w = averageFeeRateFromHistory(feeRates1w);
 
   setContent(`
     <div class="intro-box">
@@ -405,6 +456,8 @@ async function renderHome() {
       ${feeSpeedRowsHtml(fees, eurRate)}
       ${eurRate ? "" : `<p class="small muted" style="margin:0.5rem 0 0;">Cambio EUR non disponibile al momento: mostro solo l'importo in sat.</p>`}
     </div>
+
+    ${feeHistoryComparisonHtml(fees.halfHourFee, avgFeeRate24h, avgFeeRate1w)}
 
     <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
       <h2 class="section-title" style="margin-top:0;">Ultimi blocchi minati</h2>
@@ -3009,6 +3062,20 @@ function renderAddressChecker(guide) {
 // ---------- Novità (changelog) ----------
 
 const CHANGELOG = [
+  {
+    version: "Fee di oggi confrontata con la media recente",
+    date: "20 agosto 2026",
+    items: [
+      `Nuova card in home "La fee di adesso rispetto agli ultimi giorni": confronta la fee "normale" raccomandata in questo momento con la media pagata dai blocchi nelle ultime 24 ore e nell'ultima settimana, per capire a colpo d'occhio se conviene aspettare prima di inviare una transazione non urgente.`,
+    ],
+  },
+  {
+    version: "Home page riorganizzata",
+    date: "20 agosto 2026",
+    items: [
+      `Le sezioni della home sono state raggruppate in modo più logico: subito dopo la watchlist personale, tutti i widget di "stato della rete" (Block Clock, transazioni in attesa, fee consigliata, calcolatore costi) sono ora insieme senza interruzioni, seguiti dagli ultimi blocchi minati; la demo dei dadi per generare una seed si trova ora più in basso, come contenuto secondario.`,
+    ],
+  },
   {
     version: "Watchlist con chiavi xpub/ypub/zpub e badge novità",
     date: "8 agosto 2026",

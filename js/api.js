@@ -79,6 +79,7 @@ export const api = {
   getDifficultyAdjustment: () => fetchJson("/v1/difficulty-adjustment"),
   getMiningHashrate: (period = "3d") => fetchJson(`/v1/mining/hashrate/${period}`),
   getMiningPools: (period = "1w") => fetchJson(`/v1/mining/pools/${period}`),
+  getMiningFeeRates: (period = "1w") => fetchJson(`/v1/mining/blocks/fee-rates/${period}`),
   getPrices: () => fetchJson("/v1/prices"),
   crossCheckBlock: (hash) => fetchJsonFrom(`${CROSSCHECK_BASE_URL}/block/${hash}`),
   crossCheckTx: (txid) => fetchJsonFrom(`${CROSSCHECK_BASE_URL}/tx/${txid}`),
