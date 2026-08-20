@@ -3,7 +3,23 @@
 La community di Bitcoin in the Club è una delle più importanti community Bitcoin only in Italia. Mettiamo insieme studiosi, curiosi, newbie e scettici 
 in un unico grande contenitore open source e pronto a formare e condividere conoscenze e competenze in tutta trasparenza.
 
-## Block Explorer per Newbies
+## Struttura del sito
+
+Il sito è organizzato in una **home narrativa** ("#/") che racconta la missione della community, seguita da
+una serie di **moduli** — progetti indipendenti raggiungibili dalla home e dal menu in alto:
+
+- **Home** ("#/"): non è più il block explorer, ma la pagina che presenta Bitcoin in the Club e rimanda a
+  ciascun modulo con una card dedicata.
+- **Block Explorer** (`#/explorer`, modulo): il block explorer vero e proprio — vedi la sezione sotto.
+- **Guide** (`#/guide`, modulo): percorsi pratici per chi inizia.
+- **Glossario** (`#/glossario`, modulo): oltre 100 termini Bitcoin spiegati in italiano semplice.
+- **Mining** (`#/mining`, modulo): hashrate, difficoltà, pool di mining e halving in tempo reale.
+- **Eventi** (`#/eventi`, modulo) e **Approfondimenti tematici** (`#/approfondimenti`, modulo): sezioni
+  della community non ancora popolate, con una pagina segnaposto onesta ("in arrivo") invece di contenuti
+  finti.
+- **Novità** (`#/novita`): changelog del sito, raggruppato per data di rilascio.
+
+## Block Explorer per Newbies (`#/explorer`)
 
 Questo repository contiene un **block explorer Bitcoin semplice e intuitivo**, pensato per chi si avvicina
 per la prima volta a Bitcoin. Permette di cercare e consultare blocchi, transazioni e indirizzi con
@@ -13,9 +29,10 @@ conosce i termini.
 Funzionalità principali:
 
 - **Ricerca unica**: incolla un'altezza di blocco, un hash (blocco o transazione) oppure un indirizzo
-  Bitcoin e verrai portato direttamente alla pagina giusta.
-- **Home page** con gli ultimi 6 blocchi minati, transazioni in attesa (mempool) e fee consigliate,
-  ciascuna con un piccolo tooltip "?" che spiega il termine.
+  Bitcoin e verrai portato direttamente alla pagina giusta (la barra di ricerca è sempre visibile in
+  header, su qualunque pagina del sito).
+- **Pagina Explorer** (`#/explorer`) con gli ultimi 6 blocchi minati, transazioni in attesa (mempool) e fee
+  consigliate, ciascuna con un piccolo tooltip "?" che spiega il termine.
 - **Tutti i blocchi** (`#/blocchi`): l'elenco completo dei blocchi, con paginazione "Carica altri
   blocchi" per risalire la catena a ritroso senza limiti, e un effetto di comparsa a cascata (le righe
   si animano in sequenza) che rende la navigazione più dinamica e "da gioco".
@@ -65,7 +82,7 @@ Funzionalità principali:
 - **Dettaglio indirizzo**: saldo attuale (con controvalore in EUR quando disponibile), totale ricevuto,
   cronologia transazioni con importi in entrata/uscita evidenziati, e un pulsante per **salvare l'indirizzo
   nei preferiti** (solo nel browser, nessun account necessario).
-- **I tuoi indirizzi salvati** (in home, con un modulo sempre visibile per aggiungerne): saldo aggiornato
+- **I tuoi indirizzi salvati** (in Explorer, con un modulo sempre visibile per aggiungerne): saldo aggiornato
   dei tuoi indirizzi preferiti senza doverli ripescare ogni volta dal wallet, con un **totale complessivo**
   e un **badge "● Novità"** su ogni voce il cui saldo o numero di transazioni è cambiato dall'ultima
   visita — utile per accorgersi al volo di un pagamento arrivato o partito senza dover riaprire ogni
@@ -81,7 +98,7 @@ Funzionalità principali:
   interamente nel browser, mostra l'indirizzo raggruppato a blocchi per un confronto manuale più facile, e
   segnala se ha già una cronologia on-chain. Conferma solo che l'indirizzo è scritto correttamente, non che
   appartenga a chi pensi: lo strumento lo ricorda esplicitamente.
-- **Quanto costa inviare bitcoin adesso?** (in home): le fee consigliate del momento tradotte in sat e in
+- **Quanto costa inviare bitcoin adesso?** (in Explorer): le fee consigliate del momento tradotte in sat e in
   euro (se il cambio è disponibile) per tre velocità diverse, su una transazione tipo. Subito sotto, una
   card confronta la fee "normale" di adesso con la media pagata dai blocchi nelle ultime 24 ore e
   nell'ultima settimana, per capire a colpo d'occhio se conviene aspettare prima di inviare.
@@ -97,7 +114,7 @@ Funzionalità principali:
   custodial vs non-custodial, come scegliere il primo wallet, le truffe Bitcoin più comuni, come funzionano
   fee e conferme, e le basi della privacy su Bitcoin.
 - **Primi passi con Bitcoin: la tua roadmap** (`#/guide/primi-passi`, in cima alla sezione Guide con badge
-  "🚀 Inizia qui", e linkata anche in home): la guida pensata per chi ha appena comprato i suoi primi
+  "🚀 Inizia qui", e linkata anche dalla home narrativa): la guida pensata per chi ha appena comprato i suoi primi
   bitcoin e non sa da dove cominciare. Non insegna nulla di nuovo, ma mette in ordine consigliato le guide
   già esistenti — dal capire dove sono i propri fondi oggi, alla scelta del wallet, alla protezione della
   seed, al primo trasferimento con calma, fino a truffe da riconoscere e passi più avanzati (privacy, nodo
@@ -110,7 +127,7 @@ Funzionalità principali:
   riblocca subito se torna online; le parole non vengono mai salvate, inviate in rete o copiabili, e sono
   pensate esplicitamente **per capire il meccanismo**, non per generare un wallet con fondi reali — per
   quello resta valido il consiglio della guida "Seed sicura": usare un hardware wallet dedicato. È promossa
-  con una card dedicata in home e con un badge "Interattivo" nell'indice delle guide, per renderla facile
+  con una card dedicata in Explorer e con un badge "Interattivo" nell'indice delle guide, per renderla facile
   da scoprire.
 - **Scegli il tuo portafoglio** (`#/guide/scegli-wallet`, dentro la sezione Guide): versione semplificata,
   pensata per chi inizia, dello strumento di [bitcoin.org/it/scegli-il-tuo-portafoglio](https://bitcoin.org/it/scegli-il-tuo-portafoglio).
@@ -165,7 +182,7 @@ index.html          pagina principale (header, barra di ricerca, contenitore app
 css/styles.css       stile dell'interfaccia
 js/api.js            chiamate alle API di mempool.space e al confronto con blockstream.info
 js/format.js         funzioni di formattazione (date, importi, hash abbreviati, cambio EUR, ecc.)
-js/app.js            router e logica delle varie viste (home, blocco, transazione, indirizzo, glossario, guide, mining)
+js/app.js            router e logica delle varie viste (home, explorer, blocco, transazione, indirizzo, glossario, guide, mining, eventi, approfondimenti)
 js/watchlist.js       salvataggio locale degli indirizzi/chiavi xpub preferiti (localStorage)
 js/addresscheck.js    verifica del checksum di un indirizzo (base58check, bech32/bech32m)
 js/bip32.js           derivazione BIP32 da xpub/ypub/zpub (secp256k1 e RIPEMD-160 client-side) e scoperta indirizzi

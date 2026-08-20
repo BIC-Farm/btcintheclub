@@ -411,6 +411,30 @@ a:hover {
   letter-spacing: 0.03em;
   vertical-align: middle;
 }
+.feature-badge.soon {
+  background: var(--card-bg-hover);
+  color: var(--ink-soft);
+  border: 1px solid var(--border);
+}
+.feature-card.soon {
+  opacity: 0.85;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 0.75rem 0 1.5rem;
+}
+.module-grid .feature-card {
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 0;
+  height: 100%;
+}
+.module-grid .feature-arrow {
+  align-self: flex-end;
+}
 
 .block-clock-card {
   display: flex;
@@ -1375,6 +1399,8 @@ details.tech-details summary:hover {
   }
   .main-nav {
     justify-content: center;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
   }
   .row-top {
     flex-direction: column;
