@@ -1100,6 +1100,25 @@ details.tech-details summary:hover {
   gap: 0.35rem;
   margin-top: 0.7rem;
 }
+.changelog-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.6rem;
+}
+.changelog-entry {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
+}
+.changelog-entry:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+.changelog-entry-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
 .tx-journey-progress {
   display: flex;
   justify-content: center;
