@@ -17,7 +17,9 @@ una serie di **moduli** — progetti indipendenti raggiungibili dalla home e dal
 - **Eventi** (`#/eventi`, modulo) e **Approfondimenti tematici** (`#/approfondimenti`, modulo): sezioni
   della community non ancora popolate, con una pagina segnaposto onesta ("in arrivo") invece di contenuti
   finti.
-- **Novità** (`#/novita`): changelog del sito, raggruppato per data di rilascio.
+- **Novità** (`#/novita`): changelog del sito, raggruppato per data di rilascio, con un numero di versione
+  (SemVer semplificato: `MAJOR.MINOR.PATCH`, con un nuovo *minor* per ogni giorno di rilascio con novità)
+  accanto a ciascun gruppo. La versione più recente è mostrata anche in fondo a ogni pagina del sito.
 
 ## Block Explorer per Newbies (`#/explorer`)
 

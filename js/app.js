@@ -3422,6 +3422,20 @@ function renderAddressChecker(guide) {
 
 const CHANGELOG = [
   {
+    version: "Numero di versione del sito",
+    date: "20 agosto 2026",
+    items: [
+      `Il sito ha ora un numero di versione (in fondo a ogni pagina, e accanto a ogni rilascio in questa pagina Novità), per capire a colpo d'occhio quanto è cambiato da un aggiornamento all'altro.`,
+    ],
+  },
+  {
+    version: "Sottotitolo dell'header aggiornato",
+    date: "20 agosto 2026",
+    items: [
+      `Il sottotitolo sotto "Bitcoin in the Club" nell'header non diceva più "Block Explorer per Newbies", ormai superato dopo la nuova home: ora riflette l'identità più ampia della community.`,
+    ],
+  },
+  {
     version: "Nuova home: la storia di Bitcoin in the Club",
     date: "20 agosto 2026",
     items: [
@@ -3538,6 +3552,24 @@ const CHANGELOG = [
   },
 ];
 
+/**
+ * Numero di versione (SemVer semplificato) assegnato a ogni rilascio raggruppato per data nel changelog:
+ * un nuovo minor per ogni giorno di rilascio con novità, indipendentemente da quante voci contiene.
+ * SITE_VERSION è sempre la versione del rilascio più recente (la prima voce di CHANGELOG).
+ */
+const LAUNCH_VERSION = "0.1.0";
+const RELEASE_VERSIONS = {
+  "3 agosto 2026": "0.2.0",
+  "5 agosto 2026": "0.3.0",
+  "8 agosto 2026": "0.4.0",
+  "20 agosto 2026": "0.5.0",
+};
+const SITE_VERSION = RELEASE_VERSIONS[CHANGELOG[0].date] ?? LAUNCH_VERSION;
+
+function releaseVersionLabel(date) {
+  return date === null ? LAUNCH_VERSION : (RELEASE_VERSIONS[date] ?? null);
+}
+
 /** Raggruppa le voci di changelog per data (stessa data = stesso rilascio), preservando l'ordine di apparizione. */
 function groupChangelogByDate(changelog) {
   const groups = [];
@@ -3562,6 +3594,11 @@ function changelogItemsHtml(items) {
     </ul>`;
 }
 
+function versionPillHtml(date) {
+  const ver = releaseVersionLabel(date);
+  return ver ? `<span class="version-pill">v${ver}</span>` : "";
+}
+
 function changelogGroupCardHtml(group, isNewest) {
   if (group.entries.length === 1) {
     const rel = group.entries[0];
@@ -3569,7 +3606,10 @@ function changelogGroupCardHtml(group, isNewest) {
       <div class="card">
         <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
           <span class="tip-title" style="margin-bottom:0;">${isNewest ? "🆕 " : ""}${fmt.escapeHtml(rel.version)}</span>
-          ${rel.date ? `<span class="small muted">${fmt.escapeHtml(rel.date)}</span>` : ""}
+          <span style="display:flex; align-items:center; gap:0.5rem;">
+            ${versionPillHtml(rel.date)}
+            ${rel.date ? `<span class="small muted">${fmt.escapeHtml(rel.date)}</span>` : ""}
+          </span>
         </div>
         ${changelogItemsHtml(rel.items)}
       </div>`;
@@ -3578,6 +3618,7 @@ function changelogGroupCardHtml(group, isNewest) {
     <div class="card">
       <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
         <span class="tip-title" style="margin-bottom:0;">${isNewest ? "🆕 " : ""}Aggiornamento del ${fmt.escapeHtml(group.date)}</span>
+        ${versionPillHtml(group.date)}
       </div>
       <div class="changelog-group">
         ${group.entries
@@ -3630,5 +3671,11 @@ unitToggle.addEventListener("click", (e) => {
 });
 
 syncUnitToggle();
+
+const footerVersionLink = document.getElementById("footer-version-link");
+if (footerVersionLink) {
+  footerVersionLink.insertAdjacentHTML("afterend", ` <span class="version-pill">v${SITE_VERSION}</span>`);
+}
+
 window.addEventListener("hashchange", router);
 router();

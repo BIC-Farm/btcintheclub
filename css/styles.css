@@ -1208,6 +1208,21 @@ details.tech-details summary:hover {
   font-weight: 600;
 }
 
+.version-pill {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--pill);
+  background: var(--orange-soft);
+  border: 1px solid color-mix(in srgb, var(--orange) 35%, var(--border));
+  color: var(--orange-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.site-footer .version-pill {
+  vertical-align: middle;
+}
+
 .treemap-wrap {
   position: relative;
   width: 100%;
