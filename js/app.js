@@ -72,7 +72,7 @@ function renderLoading(msg = "Caricamento…") {
 function renderError(msg, extraHtml = "") {
   setContent(`
     <div class="error-box"><strong>Ops!</strong> ${fmt.escapeHtml(msg)}</div>
-    <p><a href="#/">← Torna alla home</a></p>
+    <p><a href="#/explorer">← Torna all'Explorer</a></p>
     ${extraHtml}
   `);
 }
@@ -88,7 +88,7 @@ const SEARCH_HELP_HTML = `
 function renderNotFound() {
   setContent(`
     <div class="error-box">Pagina non trovata.</div>
-    <p><a href="#/">← Torna alla home</a></p>
+    <p><a href="#/">← Torna alla home</a> · <a href="#/explorer">Vai all'Explorer</a></p>
   `);
 }
 
@@ -117,8 +117,10 @@ async function router() {
   }
   const parts = parseHash();
   try {
-    if (parts.length === 0) return await renderHome();
+    if (parts.length === 0) return renderHome();
     switch (parts[0]) {
+      case "explorer":
+        return await renderExplorer();
       case "block":
         return await renderBlock(parts[1]);
       case "tx":
@@ -137,6 +139,10 @@ async function router() {
         return await renderBlockClockPage();
       case "novita":
         return renderChangelog();
+      case "eventi":
+        return renderEventi();
+      case "approfondimenti":
+        return renderApprofondimenti();
       case "search":
         return await renderSearch(parts[1]);
       default:
@@ -362,7 +368,144 @@ function watchlistSectionHtml(addressResults, xpubEntries, eurRate) {
   `;
 }
 
-async function renderHome() {
+const MODULES = [
+  {
+    icon: "🔍",
+    title: "Block Explorer",
+    desc: "Guarda dentro la blockchain di Bitcoin in tempo reale: blocchi, transazioni, indirizzi e una watchlist personale, spiegati in parole semplici.",
+    href: "#/explorer",
+  },
+  {
+    icon: "📚",
+    title: "Guide",
+    desc: "Percorsi pratici per chi inizia: il primo wallet, la seed phrase, le truffe da riconoscere e il viaggio interattivo di una transazione.",
+    href: "#/guide",
+  },
+  {
+    icon: "📖",
+    title: "Glossario",
+    desc: "Oltre 100 termini di Bitcoin spiegati in italiano semplice, collegati automaticamente ogni volta che compaiono nel sito.",
+    href: "#/glossario",
+  },
+  {
+    icon: "⛏️",
+    title: "Mining",
+    desc: "Hashrate, difficoltà, pool di mining più attivi e countdown al prossimo halving, tutto in tempo reale.",
+    href: "#/mining",
+  },
+  {
+    icon: "🤝",
+    title: "Eventi",
+    desc: "Meetup e incontri della community, online e non solo.",
+    href: "#/eventi",
+    soon: true,
+  },
+  {
+    icon: "🧠",
+    title: "Approfondimenti tematici",
+    desc: "Contenuti più avanzati per chi ha già le basi e vuole andare oltre le guide per principianti.",
+    href: "#/approfondimenti",
+    soon: true,
+  },
+];
+
+function moduleCardHtml(m) {
+  return `
+    <a class="feature-card ${m.soon ? "soon" : ""}" href="${m.href}">
+      <span class="feature-icon">${m.icon}</span>
+      <div class="feature-body">
+        <div class="feature-title">${fmt.escapeHtml(m.title)}${m.soon ? ` <span class="feature-badge soon">Presto</span>` : ""}</div>
+        <div class="feature-desc">${fmt.escapeHtml(m.desc)}</div>
+      </div>
+      <span class="feature-arrow">→</span>
+    </a>`;
+}
+
+function renderHome() {
+  setContent(`
+    <div class="intro-box">
+      <span class="intro-icon">₿</span>
+      <div>
+        <h1>Bitcoin in the Club</h1>
+        <p>
+          Una delle community Bitcoin-only più attive in Italia: studiosi, curiosi, newbie e scettici in un
+          unico grande contenitore open source, per formare e condividere conoscenze e competenze in tutta
+          trasparenza.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tip-title">🎯 La nostra missione</div>
+      <p>
+        Bitcoin in the Club nasce come community con un obiettivo semplice: accompagnare chi si avvicina a
+        Bitcoin verso una consapevolezza reale, non solo verso il "saperlo usare". Capire come funziona —
+        cos'è un blocco, una transazione, una fee, una chiave privata — è il modo migliore per usarlo con
+        sicurezza, senza dover dipendere dalla parola di qualcun altro.
+      </p>
+      <p style="margin-top:0.6rem;">
+        Per questo tutto quello che costruiamo è <strong>gratuito e open source</strong>: il codice è
+        pubblico, chiunque può leggerlo, verificarlo o migliorarlo. Non vendiamo corsi, non diamo consigli
+        finanziari e non promettiamo guadagni — solo strumenti pensati per imparare facendo, con dati reali
+        sotto mano.
+      </p>
+    </div>
+
+    <h2 class="section-title">🧩 I progetti della community</h2>
+    <div class="module-grid">
+      ${MODULES.map(moduleCardHtml).join("")}
+    </div>
+
+    <div class="nav-buttons" style="justify-content:center;">
+      <a class="btn btn-primary" href="#/guide/primi-passi">🚀 Inizia da qui</a>
+      <a class="btn" href="#/explorer">🔍 Vai al Block Explorer</a>
+    </div>
+  `);
+}
+
+function renderEventi() {
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / Eventi</div>
+    <h1>🤝 Eventi</h1>
+    <div class="intro-box">
+      <span class="intro-icon">🚧</span>
+      <div>
+        <p style="margin:0;">
+          Questa sezione è in arrivo: qui troverai meetup, incontri online e occasioni per conoscere altre
+          persone della community Bitcoin in the Club. Nel frattempo, tieni d'occhio la pagina
+          <a href="#/novita">Novità</a> per sapere quando sarà pronta.
+        </p>
+      </div>
+    </div>
+    <div class="nav-buttons" style="justify-content:center;">
+      <a class="btn btn-primary" href="#/explorer">🔍 Vai al Block Explorer</a>
+      <a class="btn" href="#/guide">📚 Sfoglia le Guide</a>
+    </div>
+  `);
+}
+
+function renderApprofondimenti() {
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / Approfondimenti</div>
+    <h1>🧠 Approfondimenti tematici</h1>
+    <div class="intro-box">
+      <span class="intro-icon">🚧</span>
+      <div>
+        <p style="margin:0;">
+          Questa sezione è in arrivo: qui troverai contenuti più avanzati su Bitcoin, oltre le basi delle
+          guide per principianti. Nel frattempo, dai un'occhiata alle <a href="#/guide">Guide</a> o al
+          <a href="#/glossario">Glossario</a>.
+        </p>
+      </div>
+    </div>
+    <div class="nav-buttons" style="justify-content:center;">
+      <a class="btn btn-primary" href="#/guide">📚 Vai alle Guide</a>
+      <a class="btn" href="#/glossario">📖 Vai al Glossario</a>
+    </div>
+  `);
+}
+
+async function renderExplorer() {
   renderLoading("Carico gli ultimi dati dalla blockchain…");
   const watchlistEntries = getWatchlist();
   const addressEntries = watchlistEntries.filter((e) => e.type === "address");
@@ -389,6 +532,7 @@ async function renderHome() {
   const avgFeeRate1w = averageFeeRateFromHistory(feeRates1w);
 
   setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / Explorer</div>
     <div class="intro-box">
       <span class="intro-icon">👋</span>
       <div>
@@ -480,7 +624,7 @@ async function renderHome() {
   `);
 
   document.getElementById("home-refresh").addEventListener("click", () => {
-    if (parseHash().length === 0) router();
+    if (parseHash()[0] === "explorer") router();
   });
 
   wireWatchlistAddForm();
@@ -719,7 +863,7 @@ async function renderBlockClockPage() {
   setContent(`
     <div class="blockclock-page">
       <div class="blockclock-page-controls">
-        <a class="btn" href="#/">← Home</a>
+        <a class="btn" href="#/explorer">← Explorer</a>
         <button type="button" class="btn" id="bc-fullscreen-btn">⛶ Schermo intero</button>
       </div>
       <div class="blockclock-page-center">
@@ -765,7 +909,7 @@ async function renderAllBlocks() {
   renderLoading("Carico gli ultimi blocchi…");
   const blocks = await api.getRecentBlocks();
   setContent(`
-    <div class="breadcrumb"><a href="#/">Home</a> / Tutti i blocchi</div>
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/explorer">Explorer</a> / Tutti i blocchi</div>
     <h1>📦 Tutti i blocchi</h1>
     <p class="muted">
       Ogni blocco minato, dal più recente al più vecchio. Scorri e premi "Carica altri blocchi" per
@@ -1287,7 +1431,7 @@ async function renderBlock(param) {
   const txs = await api.getBlockTxs(hash, page * 25);
 
   setContent(`
-    <div class="breadcrumb"><a href="#/">Home</a> / Blocco #${fmt.formatNumber(block.height)}</div>
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/explorer">Explorer</a> / Blocco #${fmt.formatNumber(block.height)}</div>
     <h1>Blocco #${fmt.formatNumber(block.height)}</h1>
     <p class="muted">
       Minato ${fmt.formatTimeAgo(block.timestamp)} (${fmt.formatDate(block.timestamp)})
@@ -1666,7 +1810,7 @@ async function renderTx(txid) {
     .join("");
 
   setContent(`
-    <div class="breadcrumb"><a href="#/">Home</a> / Transazione</div>
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/explorer">Explorer</a> / Transazione</div>
     <h1>Transazione</h1>
     <p>${hashWithCopyHtml(tx.txid)}</p>
     <p id="tx-status-line">${txStatusLineHtml(tx, confirmations)}</p>
@@ -1794,7 +1938,7 @@ async function renderAddress(address) {
   const watched = isWatched(address);
 
   setContent(`
-    <div class="breadcrumb"><a href="#/">Home</a> / Indirizzo</div>
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/explorer">Explorer</a> / Indirizzo</div>
     <h1>Indirizzo</h1>
     <p style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
       ${hashWithCopyHtml(address)}
@@ -2442,8 +2586,8 @@ const GUIDES = [
         <p>
           Ogni ${termLink("transazione", "transazione")} compete per lo spazio limitato di ogni
           ${termLink("blocco", "blocco")}. Quando la rete è congestionata, chi paga una
-          ${termLink("fee", "fee")} più alta viene incluso prima. Nella home di questo explorer trovi sempre
-          le fee consigliate del momento, aggiornate in tempo reale.
+          ${termLink("fee", "fee")} più alta viene incluso prima. Nell'${termLink("Explorer", "blockexplorer")}
+          trovi sempre le fee consigliate del momento, aggiornate in tempo reale.
         </p>
       </div>
 
@@ -3036,11 +3180,11 @@ async function renderTxJourney(guide) {
         </p>
         <p>
           Ora che sai come funziona, prova a cercare una ${termLink("transazione", "transazione")} vera nella
-          barra di ricerca in alto, oppure guarda gli ultimi blocchi in home per vederne uno appena trovato.
+          barra di ricerca in alto, oppure guarda gli ultimi blocchi nell'Explorer per vederne uno appena trovato.
         </p>
         <div class="nav-buttons">
           <a class="btn" href="#/glossario/fee">Vai al glossario delle fee →</a>
-          <a class="btn btn-primary" href="#/">🏠 Torna alla home →</a>
+          <a class="btn btn-primary" href="#/explorer">🔍 Vai all'Explorer →</a>
         </div>`,
     },
   ];
@@ -3277,6 +3421,15 @@ function renderAddressChecker(guide) {
 // ---------- Novità (changelog) ----------
 
 const CHANGELOG = [
+  {
+    version: "Nuova home: la storia di Bitcoin in the Club",
+    date: "20 agosto 2026",
+    items: [
+      `La home ("#/") non è più il block explorer, ma una pagina che racconta chi è Bitcoin in the Club e la sua missione: accompagnare le persone verso una consapevolezza reale del mondo Bitcoin, gratis e open source.`,
+      `Il block explorer (blocchi, mempool, watchlist, fee) si trova ora su "#/explorer", raggiungibile anche dal menu in alto.`,
+      `La nuova home presenta tutti i progetti della community come moduli: Block Explorer, Guide, Glossario, Mining, e due sezioni in arrivo — Eventi e Approfondimenti tematici.`,
+    ],
+  },
   {
     version: "Guida interattiva: il viaggio di una transazione",
     date: "20 agosto 2026",
