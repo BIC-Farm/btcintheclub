@@ -3385,24 +3385,69 @@ const CHANGELOG = [
   },
 ];
 
+/** Raggruppa le voci di changelog per data (stessa data = stesso rilascio), preservando l'ordine di apparizione. */
+function groupChangelogByDate(changelog) {
+  const groups = [];
+  const byKey = new Map();
+  changelog.forEach((entry, i) => {
+    const key = entry.date ?? `__nodate__${i}`;
+    let group = byKey.get(key);
+    if (!group) {
+      group = { date: entry.date, entries: [] };
+      byKey.set(key, group);
+      groups.push(group);
+    }
+    group.entries.push(entry);
+  });
+  return groups;
+}
+
+function changelogItemsHtml(items) {
+  return `
+    <ul style="margin:0.6rem 0 0; padding-left:1.2rem; display:flex; flex-direction:column; gap:0.4rem;">
+      ${items.map((item) => `<li class="small">${fmt.escapeHtml(item)}</li>`).join("")}
+    </ul>`;
+}
+
+function changelogGroupCardHtml(group, isNewest) {
+  if (group.entries.length === 1) {
+    const rel = group.entries[0];
+    return `
+      <div class="card">
+        <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
+          <span class="tip-title" style="margin-bottom:0;">${isNewest ? "🆕 " : ""}${fmt.escapeHtml(rel.version)}</span>
+          ${rel.date ? `<span class="small muted">${fmt.escapeHtml(rel.date)}</span>` : ""}
+        </div>
+        ${changelogItemsHtml(rel.items)}
+      </div>`;
+  }
+  return `
+    <div class="card">
+      <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
+        <span class="tip-title" style="margin-bottom:0;">${isNewest ? "🆕 " : ""}Aggiornamento del ${fmt.escapeHtml(group.date)}</span>
+      </div>
+      <div class="changelog-group">
+        ${group.entries
+          .map(
+            (rel) => `
+          <div class="changelog-entry">
+            <div class="changelog-entry-title">${fmt.escapeHtml(rel.version)}</div>
+            ${changelogItemsHtml(rel.items)}
+          </div>`
+          )
+          .join("")}
+      </div>
+    </div>`;
+}
+
 function renderChangelog() {
+  const groups = groupChangelogByDate(CHANGELOG);
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Novità</div>
     <h1>🆕 Novità</h1>
     <p class="muted">Cosa è cambiato nel block explorer, versione dopo versione.</p>
     <div style="display:flex; flex-direction:column; gap:1rem;">
-      ${CHANGELOG.map(
-        (rel, i) => `
-        <div class="card">
-          <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
-            <span class="tip-title" style="margin-bottom:0;">${i === 0 ? "🆕 " : ""}${fmt.escapeHtml(rel.version)}</span>
-            ${rel.date ? `<span class="small muted">${fmt.escapeHtml(rel.date)}</span>` : ""}
-          </div>
-          <ul style="margin:0.6rem 0 0; padding-left:1.2rem; display:flex; flex-direction:column; gap:0.4rem;">
-            ${rel.items.map((item) => `<li class="small">${fmt.escapeHtml(item)}</li>`).join("")}
-          </ul>
-        </div>`
-      ).join("")}
+      ${groups.map((group, i) => changelogGroupCardHtml(group, i === 0)).join("")}
     </div>
   `);
 }
