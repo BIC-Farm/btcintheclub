@@ -266,6 +266,57 @@ a:hover {
   text-decoration: none;
 }
 
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card-bg-hover);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.nav-toggle-bars,
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  display: block;
+  width: 1.2rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.nav-toggle-bars {
+  position: relative;
+}
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+.nav-toggle-bars::before {
+  top: -6px;
+}
+.nav-toggle-bars::after {
+  top: 6px;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars {
+  background: transparent;
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] .nav-toggle-bars::after {
+  top: 0;
+  transform: rotate(-45deg);
+}
+
 /* Layout */
 .app {
   max-width: 1100px;
@@ -1409,13 +1460,42 @@ details.tech-details summary:hover {
 
 @media (max-width: 600px) {
   .header-inner {
+    position: relative;
     flex-direction: column;
     align-items: stretch;
+    padding-right: 3.6rem;
+  }
+  .nav-toggle {
+    display: inline-flex;
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
   }
   .main-nav {
-    justify-content: center;
-    flex-wrap: wrap;
-    row-gap: 0.5rem;
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-solid);
+    border-top: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    box-shadow: var(--shadow-md);
+    padding: 0.35rem 1.1rem;
+    z-index: 20;
+  }
+  .main-nav.open {
+    display: flex;
+  }
+  .main-nav a {
+    padding: 0.9rem 0.15rem;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .main-nav a:last-child {
+    border-bottom: none;
   }
   .row-top {
     flex-direction: column;

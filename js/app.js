@@ -22,6 +22,8 @@ const app = document.getElementById("app");
 const searchForm = document.getElementById("search-form");
 const searchInput = document.getElementById("search-input");
 const unitToggle = document.getElementById("unit-toggle");
+const navToggle = document.getElementById("nav-toggle");
+const mainNav = document.getElementById("main-nav");
 
 function setContent(html) {
   app.innerHTML = html;
@@ -3677,5 +3679,32 @@ if (footerVersionLink) {
   footerVersionLink.insertAdjacentHTML("afterend", ` <span class="version-pill">v${SITE_VERSION}</span>`);
 }
 
-window.addEventListener("hashchange", router);
+function setNavOpen(open) {
+  mainNav.classList.toggle("open", open);
+  navToggle.setAttribute("aria-expanded", String(open));
+  navToggle.setAttribute("aria-label", open ? "Chiudi il menu" : "Apri il menu");
+}
+
+navToggle.addEventListener("click", () => {
+  setNavOpen(!mainNav.classList.contains("open"));
+});
+
+mainNav.addEventListener("click", (e) => {
+  if (e.target.closest("a")) setNavOpen(false);
+});
+
+document.addEventListener("click", (e) => {
+  if (!mainNav.classList.contains("open")) return;
+  if (mainNav.contains(e.target) || navToggle.contains(e.target)) return;
+  setNavOpen(false);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && mainNav.classList.contains("open")) setNavOpen(false);
+});
+
+window.addEventListener("hashchange", () => {
+  setNavOpen(false);
+  router();
+});
 router();

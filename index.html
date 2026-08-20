@@ -38,7 +38,11 @@
         <button type="button" class="unit-btn" data-unit="sats">sats</button>
       </div>
 
-      <nav class="main-nav">
+      <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-controls="main-nav" aria-label="Apri il menu">
+        <span class="nav-toggle-bars" aria-hidden="true"></span>
+      </button>
+
+      <nav id="main-nav" class="main-nav">
         <a href="#/">Home</a>
         <a href="#/explorer">Explorer</a>
         <a href="#/mining">Mining</a>
