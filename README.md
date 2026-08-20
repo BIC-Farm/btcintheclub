@@ -122,6 +122,11 @@ Funzionalità principali:
 - **Gestisci il tuo nodo** (`#/guide/gestisci-nodo`, dentro la sezione Guide): il passo successivo a un
   wallet non-custodial per chi vuole la sovranità completa — perché avere un proprio nodo Bitcoin conta,
   cosa cambia in termini di verifica e privacy, e da dove iniziare (Bitcoin Core, Umbrel, myNode, RaspiBlitz).
+- **Il viaggio di una transazione** (`#/guide/viaggio-transazione`, dentro la sezione Guide, badge
+  "Interattivo"): percorso guidato a 5 passi — creazione, propagazione in mempool, selezione da parte di un
+  miner, inclusione in un blocco, conferme — con dati reali della rete in questo momento (transazioni in
+  mempool, fee consigliate, ultimo blocco trovato). Al passo del mining uno slider lascia scegliere una fee
+  e mostra subito, con i dati live, in che fascia finirebbe e quanto potrebbe volerci.
 - **Banner di trasparenza permanente** in fondo a ogni pagina: ricorda che questo sito è un client di
   un'unica fonte terza (mempool.space), non un modo "trust-minimized" di verificare i dati, con link alla
   guida sul nodo.
