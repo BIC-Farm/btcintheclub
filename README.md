@@ -14,9 +14,17 @@ una serie di **moduli** — progetti indipendenti raggiungibili dalla home e dal
 - **Guide** (`#/guide`, modulo): percorsi pratici per chi inizia.
 - **Glossario** (`#/glossario`, modulo): oltre 100 termini Bitcoin spiegati in italiano semplice.
 - **Mining** (`#/mining`, modulo): hashrate, difficoltà, pool di mining e halving in tempo reale.
-- **Eventi** (`#/eventi`, modulo) e **Approfondimenti tematici** (`#/approfondimenti`, modulo): sezioni
-  della community non ancora popolate, con una pagina segnaposto onesta ("in arrivo") invece di contenuti
-  finti.
+- **Approfondimenti tematici** (`#/approfondimenti`, modulo): 7 articoli per chi ha già le basi e vuole
+  andare oltre le guide per principianti — come funziona davvero un nodo completo (IBD, insieme degli
+  UTXO), Lightning Network in pratica, l'economia monetaria di Bitcoin (scarsità, halving, con un chiaro
+  disclaimer "non è un consiglio finanziario"), privacy avanzata (coin control, CoinJoin, Tor), sicurezza
+  avanzata (multisig, PSBT, eredità), i fork storici del protocollo (soft/hard fork, SegWit, la "guerra
+  delle dimensioni dei blocchi"), e come leggere criticamente i dati on-chain (limiti delle euristiche di
+  clustering).
+- **Eventi** (`#/eventi`, modulo): meetup e incontri della community. L'infrastruttura è pronta (schema
+  completo per data/ora, online o in presenza, livello, relatore, tag, link di iscrizione e registrazione)
+  ma l'elenco (`EVENTS` in `js/app.js`) parte vuoto: finché non viene aggiunto un evento reale via PR, la
+  pagina mostra uno stato vuoto onesto invece di eventi finti.
 - **Novità** (`#/novita`): changelog del sito, raggruppato per data di rilascio, con un numero di versione
   (SemVer semplificato: `MAJOR.MINOR.PATCH`, con un nuovo *minor* per ogni giorno di rilascio con novità)
   accanto a ciascun gruppo. La versione più recente è mostrata anche in fondo a ogni pagina del sito.

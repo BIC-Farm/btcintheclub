@@ -144,7 +144,7 @@ async function router() {
       case "eventi":
         return renderEventi();
       case "approfondimenti":
-        return renderApprofondimenti();
+        return parts[1] ? renderApprofondimento(parts[1]) : renderApprofondimentiIndex();
       case "search":
         return await renderSearch(parts[1]);
       default:
@@ -405,9 +405,8 @@ const MODULES = [
   {
     icon: "🧠",
     title: "Approfondimenti tematici",
-    desc: "Contenuti più avanzati per chi ha già le basi e vuole andare oltre le guide per principianti.",
+    desc: "Contenuti più avanzati per chi ha già le basi: nodo completo, Lightning, privacy, sicurezza, economia monetaria e storia del protocollo.",
     href: "#/approfondimenti",
-    soon: true,
   },
 ];
 
@@ -465,20 +464,78 @@ function renderHome() {
   `);
 }
 
+// ---------- Eventi ----------
+
+/**
+ * Eventi della community: vuoto finché non ne viene aggiunto uno reale (via PR su questo repository).
+ * Schema di ogni voce, pensato per coprire meetup online e in presenza:
+ * { title, dateLabel, mode: "online"|"presenza", location, link, level, tags, speaker, speakerBio, recordingLink }
+ */
+const EVENTS = [];
+
+function eventLevelBadge(level) {
+  const labels = { principiante: "🌱 Principiante", intermedio: "🔵 Intermedio", avanzato: "🟣 Avanzato" };
+  return labels[level] ? `<span class="feature-badge soon">${labels[level]}</span>` : "";
+}
+
+function eventCardHtml(ev) {
+  const modeLabel = ev.mode === "online" ? `💻 Online${ev.location ? ` · ${fmt.escapeHtml(ev.location)}` : ""}` : `📍 ${fmt.escapeHtml(ev.location || "In presenza")}`;
+  return `
+    <div class="card">
+      <div class="row-top" style="flex-wrap:wrap; gap:0.5rem;">
+        <span class="tip-title" style="margin-bottom:0;">${fmt.escapeHtml(ev.title)}</span>
+        ${eventLevelBadge(ev.level)}
+      </div>
+      <p class="small muted" style="margin:0.35rem 0 0;">${fmt.escapeHtml(ev.dateLabel)} · ${modeLabel}</p>
+      ${ev.speaker ? `<p style="margin-top:0.5rem;"><strong>${fmt.escapeHtml(ev.speaker)}</strong>${ev.speakerBio ? ` — ${fmt.escapeHtml(ev.speakerBio)}` : ""}</p>` : ""}
+      ${
+        ev.tags && ev.tags.length
+          ? `<div class="wallet-tags">${ev.tags.map((t) => `<span class="wallet-tag">${fmt.escapeHtml(t)}</span>`).join("")}</div>`
+          : ""
+      }
+      <div class="nav-buttons" style="margin-top:0.75rem;">
+        ${ev.link ? `<a class="btn btn-primary" href="${fmt.escapeHtml(ev.link)}" target="_blank" rel="noopener noreferrer">✅ Iscriviti / partecipa →</a>` : ""}
+        ${ev.recordingLink ? `<a class="btn" href="${fmt.escapeHtml(ev.recordingLink)}" target="_blank" rel="noopener noreferrer">🎥 Guarda la registrazione →</a>` : ""}
+      </div>
+    </div>`;
+}
+
 function renderEventi() {
+  const upcoming = EVENTS.filter((e) => e.status !== "passato");
+  const past = EVENTS.filter((e) => e.status === "passato");
+
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Eventi</div>
     <h1>🤝 Eventi</h1>
     <div class="intro-box">
-      <span class="intro-icon">🚧</span>
+      <span class="intro-icon">🤝</span>
       <div>
         <p style="margin:0;">
-          Questa sezione è in arrivo: qui troverai meetup, incontri online e occasioni per conoscere altre
-          persone della community Bitcoin in the Club. Nel frattempo, tieni d'occhio la pagina
-          <a href="#/novita">Novità</a> per sapere quando sarà pronta.
+          Meetup, incontri online e occasioni per conoscere altre persone della community Bitcoin in the
+          Club. Gli eventi vengono aggiunti man mano che vengono organizzati.
         </p>
       </div>
     </div>
+
+    ${
+      upcoming.length === 0 && past.length === 0
+        ? `<div class="intro-box">
+            <span class="intro-icon">🚧</span>
+            <div>
+              <p style="margin:0;">
+                Non ci sono ancora eventi in programma. Torna a trovarci, oppure — se vuoi proporre o
+                organizzare tu un evento della community — apri una segnalazione su
+                <a href="https://github.com/bic-farm/btcintheclub" target="_blank" rel="noopener noreferrer">GitHub</a>.
+                Puoi anche tenere d'occhio la pagina <a href="#/novita">Novità</a> per sapere quando arriva il primo.
+              </p>
+            </div>
+          </div>`
+        : `
+          ${upcoming.length ? `<h2 class="section-title">Prossimi eventi</h2>${upcoming.map(eventCardHtml).join("")}` : ""}
+          ${past.length ? `<h2 class="section-title">Eventi passati</h2>${past.map(eventCardHtml).join("")}` : ""}
+        `
+    }
+
     <div class="nav-buttons" style="justify-content:center;">
       <a class="btn btn-primary" href="#/explorer">🔍 Vai al Block Explorer</a>
       <a class="btn" href="#/guide">📚 Sfoglia le Guide</a>
@@ -486,24 +543,363 @@ function renderEventi() {
   `);
 }
 
-function renderApprofondimenti() {
+// ---------- Approfondimenti tematici ----------
+
+const APPROFONDIMENTI = [
+  {
+    slug: "nodo-completo",
+    icon: "🖥️",
+    title: "Come funziona davvero un nodo completo",
+    summary: "Cosa succede quando un nodo scarica e verifica la blockchain: dall'Initial Block Download all'insieme degli UTXO.",
+    body: () => `
+      <div class="card">
+        <p>
+          Un ${termLink("nodo", "nodo")} completo non si fida della parola di nessuno: rifà da solo ogni
+          controllo che le ${termLink("regole di consenso", "consenso")} richiedono, blocco per blocco,
+          fin dal primo. È il significato tecnico, non solo lo slogan, di "don't trust, verify".
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">⏳ Initial Block Download (IBD)</div>
+          <p>Quando un nodo parte per la prima volta, scarica e verifica ogni blocco dal genesis block a
+          oggi, in ordine: firme, proof-of-work, la ricompensa di blocco prevista per quell'altezza,
+          nessuna doppia spesa. Con hardware modesto può richiedere giorni.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🪙 L'insieme degli UTXO</div>
+          <p>Mentre verifica, il nodo costruisce e mantiene l'elenco di tutti gli ${termLink("UTXO", "utxo")}
+          ancora spendibili: è la vera "fotografia" di chi possiede cosa in questo momento, non un semplice
+          elenco di transazioni passate.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">✅ Verifica, non fiducia</div>
+          <p>Ogni nodo — anche il tuo, se ne fai girare uno — rifà questi controlli in totale autonomia:
+          nessuno può convincerlo che una regola diversa vada bene, perché la verifica non dipende dalla
+          parola di un altro nodo.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">⏳ Mempool locale vs mempool di terzi</div>
+          <p>Quando guardi questo sito, guardi la ${termLink("mempool", "mempool")} vista da UN server di
+          mempool.space. Il tuo nodo, con la propria, potrebbe vedere un insieme leggermente diverso di
+          transazioni in attesa: la propagazione in rete non è istantanea.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn btn-primary" href="#/guide/gestisci-nodo">🖥️ Guida: gestisci il tuo nodo →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "lightning-pratica",
+    icon: "⚡",
+    title: "Lightning Network in pratica",
+    summary: "Canali, routing e la scelta tra un wallet Lightning custodial o un proprio nodo, spiegati nella pratica quotidiana.",
+    body: () => `
+      <div class="card">
+        <p>
+          La ${termLink("Lightning Network", "lightning")} è un ${termLink("layer 2", "layer2")} costruito
+          sopra Bitcoin per pagamenti istantanei ed economici. Il glossario spiega i singoli termini: qui
+          vediamo come si comportano nella pratica.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🌩️ Aprire un canale</div>
+          <p>Una transazione on-chain blocca fondi tra due ${termLink("nodi Lightning", "nodolightning")},
+          creando un ${termLink("canale", "canalelightning")} con una certa
+          ${termLink("capacità", "capacitacanale")}. Da quel momento i pagamenti tra loro sono istantanei e
+          non toccano più la blockchain, finché il canale non si chiude.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔀 Routing multi-hop</div>
+          <p>Non serve un canale diretto con chi ricevi: i pagamenti "saltano" attraverso una catena di
+          canali già aperti tra altri utenti, scegliendo un percorso con abbastanza liquidità disponibile
+          in ogni tratto.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">⚖️ Liquidità in entrata e in uscita</div>
+          <p>Ogni canale divide la capacità tra "quanto posso inviare" e "quanto posso ricevere". Un
+          problema pratico comune per chi inizia è avere canali sbilanciati tutti da un lato solo.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔑 Custodial o nodo proprio</div>
+          <p>Un wallet Lightning custodial è più semplice ma richiede fiducia in chi lo gestisce, come un
+          wallet on-chain custodial. Un proprio nodo dà controllo pieno, ma richiede di restare online e
+          gestire i backup dei canali — più delicato del backup di una seed, perché lo stato di un canale
+          cambia a ogni pagamento.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/glossario/lightning">📖 Vai al glossario Lightning →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "economia-monetaria",
+    icon: "🪙",
+    title: "Scarsità programmata: l'economia monetaria di Bitcoin",
+    summary: "Perché l'offerta fissa di 21 milioni è la caratteristica centrale di Bitcoin, e come si inserisce nella storia della moneta.",
+    body: () => `
+      <div class="card">
+        <p>
+          Nella storia, la moneta è passata dal baratto a merci scarse usate come mezzo di scambio (conchiglie,
+          metalli preziosi), poi a monete emesse da stati, spesso ancorate a una riserva fisica come l'oro.
+          Dal 1971, le principali valute mondiali sono diventate "fiat": senza ancoraggio fisico, con
+          un'offerta decisa da una banca centrale. Bitcoin propone un ritorno a un'offerta scarsa e
+          verificabile, ma gestita da un protocollo invece che da un'istituzione.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🔒 21 milioni, per sempre</div>
+          <p>Il limite massimo di emissione è scritto nel protocollo e fatto rispettare da ogni nodo che
+          verifica le ${termLink("regole di consenso", "consenso")} — non da una decisione di
+          un'autorità che potrebbe cambiare idea.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">✂️ Emissione decrescente</div>
+          <p>Ogni ${termLink("halving", "halving")} (circa 4 anni) la ${termLink("ricompensa di blocco", "blockreward")}
+          si dimezza, rendendo l'emissione di nuovi bitcoin sempre più lenta, fino ad azzerarsi (stimato
+          intorno al 2140).</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🚫 Nessuno può "stamparne" di più</div>
+          <p>A differenza di una valuta fiat, nessuna autorità centrale può aumentare l'offerta: servirebbe
+          che chi fa girare un nodo, in massa, accettasse volontariamente una regola diversa — cosa mai
+          successa nella storia di Bitcoin.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">📊 Il modello "stock-to-flow"</div>
+          <p>Un modello popolare nella community che mette in relazione la scarsità (rapporto tra offerta
+          esistente e nuova emissione) con il valore storico. È un argomento dibattuto, non una previsione
+          garantita.</p>
+        </div>
+      </div>
+
+      <div class="warning-box" style="margin-top:1rem;">
+        <p style="margin:0;">
+          <strong>Non è un consiglio finanziario:</strong> questo approfondimento descrive come funziona il
+          protocollo di emissione, non fa previsioni. Il valore di mercato di Bitcoin resta imprevedibile e
+          può scendere così come salire.
+        </p>
+      </div>
+    `,
+  },
+  {
+    slug: "privacy-avanzata",
+    icon: "🌀",
+    title: "Privacy avanzata: coin control, CoinJoin e Tor",
+    summary: "Tecniche concrete per chi vuole andare oltre le basi già viste nella guida sulla privacy.",
+    body: () => `
+      <div class="card">
+        <p>
+          La guida "Privacy su Bitcoin" spiega i concetti di base
+          (${termLink("riuso degli indirizzi", "riusoindirizzi")},
+          ${termLink("analisi della blockchain", "chainanalysis")}). Qui vediamo qualche tecnica concreta
+          in più, per chi vuole approfondire.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🎛️ Coin control</div>
+          <p>Scegliere manualmente quali ${termLink("UTXO", "utxo")} usare in una transazione, invece di
+          lasciare che il wallet li selezioni in automatico, evita di "mescolare" fondi con provenienze
+          diverse che vorresti tenere separate.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🌀 ${termLink("CoinJoin", "coinjoin")}</div>
+          <p>Più persone combinano le proprie transazioni in una sola, mescolando i fondi: rende più
+          difficile per un osservatore esterno risalire a chi ha pagato chi, proprio perché rompe
+          l'euristica che normalmente raggruppa gli input di una stessa persona.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🧅 Tor</div>
+          <p>Instradare le connessioni del proprio nodo o wallet attraverso la rete Tor nasconde il proprio
+          indirizzo IP a chi osserva la rete, evitando di collegare le tue transazioni alla tua posizione
+          di rete.</p>
+        </div>
+        <div class="tip-card bad">
+          <div class="tip-title">⚠️ Gli strumenti cambiano nel tempo</div>
+          <p>Gli strumenti specifici per coin control e CoinJoin si evolvono, e la loro disponibilità o
+          liceità può cambiare da una giurisdizione all'altra. Questa pagina descrive i concetti, non
+          raccomanda uno strumento specifico: verifica sempre lo stato attuale prima di usarne uno.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn btn-primary" href="#/guide/privacy-bitcoin">🕵️ Guida: privacy su Bitcoin →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "sicurezza-avanzata",
+    icon: "🛡️",
+    title: "Sicurezza avanzata: multisig ed eredità",
+    summary: "Oltre la singola seed phrase: come proteggere fondi importanti da un singolo punto di errore.",
+    body: () => `
+      <div class="card">
+        <p>
+          La guida "Seed sicura" spiega come proteggere UNA seed. Qui si parla di cosa fare quando una sola
+          chiave — per quanto ben protetta — diventa da sola un rischio troppo grande.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🔏 ${termLink("Multisig", "multisig")}</div>
+          <p>Un wallet 2-su-3 (o simili) richiede le firme di più chiavi private per spendere i fondi:
+          nessuna singola chiave rubata o persa da sola compromette o blocca i fondi.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">📋 ${termLink("PSBT", "psbt")}</div>
+          <p>Il formato che permette a più dispositivi o persone di firmare la stessa transazione multisig
+          in passaggi separati, senza dover mai riunire le chiavi private in un unico posto.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🗺️ Backup distribuiti</div>
+          <p>Invece di un'unica seed in un unico posto, dividere la protezione tra più elementi fisici in
+          più luoghi (es. le chiavi di un multisig in casseforti diverse) riduce il rischio che un singolo
+          evento — furto, incendio — comprometta tutto.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">👨‍👩‍👧 Pianificare l'eredità</div>
+          <p>Senza un piano, chi possiede bitcoin rischia di portarsi le chiavi con sé. Servono istruzioni
+          chiare lasciate a persone fidate, bilanciando sicurezza (non rivelare troppo prima del tempo) e
+          accessibilità reale in caso di necessità.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn btn-primary" href="#/guide/seed-sicura">🔐 Guida: proteggi la tua seed phrase →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "storia-protocollo",
+    icon: "🏛️",
+    title: "Fork e dibattiti storici del protocollo",
+    summary: "Cosa distingue un soft fork da un hard fork, e come Bitcoin ha affrontato i momenti di maggiore disaccordo sulle proprie regole.",
+    body: () => `
+      <div class="card">
+        <p>
+          Bitcoin cambia raramente e con grande cautela: ogni modifica alle regole deve convincere una
+          larghissima maggioranza della rete, perché chi non è d'accordo può, letteralmente, continuare a
+          seguire regole diverse.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🔧 ${termLink("Soft fork", "softfork")}</div>
+          <p>Rende le regole più restrittive in modo retrocompatibile: i nodi non aggiornati continuano a
+          considerare valida la catena, anche senza cogliere le nuove regole. ${termLink("SegWit", "segwit")}
+          e ${termLink("Taproot", "taproot")} sono stati introdotti così.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔨 ${termLink("Hard fork", "hardfork")}</div>
+          <p>Un cambiamento non retrocompatibile: i nodi non aggiornati rifiutano i nuovi blocchi, e la rete
+          può dividersi in due catene separate se non c'è consenso unanime ad aggiornarsi.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">📐 La "guerra delle dimensioni dei blocchi"</div>
+          <p>Per anni la community ha discusso se aumentare la dimensione massima di un blocco per
+          permettere più transazioni. Nel 2017 chi voleva blocchi più grandi tramite un hard fork ha creato
+          una catena separata (Bitcoin Cash), mentre la maggioranza dei nodi ha continuato a seguire le
+          regole esistenti, attivando SegWit come soft fork.</p>
+        </div>
+        <div class="tip-card good">
+          <div class="tip-title">🐢 Cambiare lentamente, di proposito</div>
+          <p>Un protocollo che gestisce valore reale privilegia la prevedibilità e la compatibilità nel
+          tempo rispetto alla velocità di introdurre nuove funzionalità: è una scelta, non un limite
+          tecnico.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/glossario/softfork">📖 Vai al glossario →</a>
+      </div>
+    `,
+  },
+  {
+    slug: "leggere-dati-onchain",
+    icon: "🔬",
+    title: "Leggere criticamente i dati on-chain",
+    summary: "Cosa un block explorer può davvero dirti su un indirizzo, e dove finiscono le certezze e iniziano le supposizioni.",
+    body: () => `
+      <div class="card">
+        <p>
+          Questo stesso sito mostra saldi, transazioni e indirizzi in tempo reale: comodo, ma è importante
+          capire i limiti di quello che si vede.
+        </p>
+      </div>
+
+      <div class="glossary-grid">
+        <div class="tip-card">
+          <div class="tip-title">🏷️ Un indirizzo non è una persona</div>
+          <p>Un ${termLink("indirizzo", "indirizzo")} è pseudonimo: puoi vederne saldo e cronologia, ma
+          nulla lo lega matematicamente a un'identità, a meno che qualcuno — un exchange, la persona stessa
+          — non lo colleghi pubblicamente.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔍 L'euristica del proprietario comune</div>
+          <p>Quando una transazione ha più ${termLink("input", "input")}, l'${termLink("analisi della blockchain", "chainanalysis")}
+          più diffusa assume che appartengano tutti allo stesso proprietario. È un'euristica statistica, non
+          una certezza: ${termLink("CoinJoin", "coinjoin")} esiste apposta per romperla.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">👥 Il saldo non prova un possesso esclusivo</div>
+          <p>Un indirizzo ${termLink("multisig", "multisig")}, un wallet condiviso o un custode (un
+          exchange) possono mostrare saldi che non corrispondono a un unico proprietario finale.</p>
+        </div>
+        <div class="tip-card">
+          <div class="tip-title">🔀 Verifica, non fidarti di una fonte sola</div>
+          <p>Le pagine di blocco e transazione di questo sito mostrano un confronto con una seconda fonte
+          indipendente proprio per questo motivo: un solo servizio dati, per quanto affidabile, resta un
+          singolo punto di vista.</p>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <a class="btn" href="#/guide/privacy-bitcoin">🕵️ Guida: privacy su Bitcoin →</a>
+        <a class="btn" href="#/approfondimenti/privacy-avanzata">🌀 Privacy avanzata →</a>
+      </div>
+    `,
+  },
+];
+
+function renderApprofondimentiIndex() {
   setContent(`
     <div class="breadcrumb"><a href="#/">Home</a> / Approfondimenti</div>
     <h1>🧠 Approfondimenti tematici</h1>
-    <div class="intro-box">
-      <span class="intro-icon">🚧</span>
-      <div>
-        <p style="margin:0;">
-          Questa sezione è in arrivo: qui troverai contenuti più avanzati su Bitcoin, oltre le basi delle
-          guide per principianti. Nel frattempo, dai un'occhiata alle <a href="#/guide">Guide</a> o al
-          <a href="#/glossario">Glossario</a>.
-        </p>
-      </div>
-    </div>
-    <div class="nav-buttons" style="justify-content:center;">
-      <a class="btn btn-primary" href="#/guide">📚 Vai alle Guide</a>
-      <a class="btn" href="#/glossario">📖 Vai al Glossario</a>
-    </div>
+    <p class="muted">Contenuti più avanzati per chi ha già le basi e vuole andare oltre le guide per principianti.</p>
+    <ul class="block-list">
+      ${APPROFONDIMENTI.map(
+        (a) => `
+        <li>
+          <a class="row-link" href="#/approfondimenti/${a.slug}">
+            <div class="row-top"><span>${a.icon} ${fmt.escapeHtml(a.title)}</span></div>
+            <div class="row-bottom"><span>${fmt.escapeHtml(a.summary)}</span></div>
+          </a>
+        </li>`
+      ).join("")}
+    </ul>
+  `);
+}
+
+function renderApprofondimento(slug) {
+  const item = APPROFONDIMENTI.find((a) => a.slug === slug);
+  if (!item) return renderNotFound();
+  setContent(`
+    <div class="breadcrumb"><a href="#/">Home</a> / <a href="#/approfondimenti">Approfondimenti</a> / ${fmt.escapeHtml(item.title)}</div>
+    <h1>${item.icon} ${fmt.escapeHtml(item.title)}</h1>
+    ${item.body()}
   `);
 }
 
@@ -3424,6 +3820,14 @@ function renderAddressChecker(guide) {
 
 const CHANGELOG = [
   {
+    version: "Approfondimenti tematici ed Eventi",
+    date: "24 settembre 2026",
+    items: [
+      `La sezione "Approfondimenti tematici" (#/approfondimenti) non è più un segnaposto: contiene ora 7 articoli per chi ha già le basi — come funziona davvero un nodo completo, Lightning Network in pratica, l'economia monetaria di Bitcoin, privacy avanzata, sicurezza avanzata, i fork storici del protocollo, e come leggere criticamente i dati on-chain.`,
+      `La sezione "Eventi" (#/eventi) ha ora l'infrastruttura completa (data/ora, online o in presenza, livello, relatore, tag, link di iscrizione e registrazione): resta vuota finché non viene organizzato un primo evento reale, con uno stato vuoto onesto invece di eventi finti.`,
+    ],
+  },
+  {
     version: "Menu hamburger per la navigazione mobile",
     date: "20 agosto 2026",
     items: [
@@ -3572,6 +3976,7 @@ const RELEASE_VERSIONS = {
   "5 agosto 2026": "0.3.0",
   "8 agosto 2026": "0.4.0",
   "20 agosto 2026": "0.5.0",
+  "24 settembre 2026": "0.6.0",
 };
 const SITE_VERSION = RELEASE_VERSIONS[CHANGELOG[0].date] ?? LAUNCH_VERSION;
 
