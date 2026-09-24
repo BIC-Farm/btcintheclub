@@ -564,8 +564,8 @@ const APPROFONDIMENTI = [
         <div class="tip-card">
           <div class="tip-title">⏳ Initial Block Download (IBD)</div>
           <p>Quando un nodo parte per la prima volta, scarica e verifica ogni blocco dal genesis block a
-          oggi, in ordine: firme, proof-of-work, limite di 21 milioni, nessuna doppia spesa. Con hardware
-          modesto può richiedere giorni.</p>
+          oggi, in ordine: firme, proof-of-work, la ricompensa di blocco prevista per quell'altezza,
+          nessuna doppia spesa. Con hardware modesto può richiedere giorni.</p>
         </div>
         <div class="tip-card">
           <div class="tip-title">🪙 L'insieme degli UTXO</div>
@@ -671,8 +671,8 @@ const APPROFONDIMENTI = [
         <div class="tip-card">
           <div class="tip-title">🚫 Nessuno può "stamparne" di più</div>
           <p>A differenza di una valuta fiat, nessuna autorità centrale può aumentare l'offerta: servirebbe
-          che la maggioranza dei nodi accettasse volontariamente una regola diversa — cosa mai successa
-          nella storia di Bitcoin.</p>
+          che chi fa girare un nodo, in massa, accettasse volontariamente una regola diversa — cosa mai
+          successa nella storia di Bitcoin.</p>
         </div>
         <div class="tip-card">
           <div class="tip-title">📊 Il modello "stock-to-flow"</div>
